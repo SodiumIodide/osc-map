@@ -181,7 +181,7 @@ func (m *MSCMap) sendMidiPC(cue float64) {
 		return
 	}
 
-	mm := midi.ProgramChange(m.midiOutChannel, soundCue)
+	mm := midi.ProgramChange(m.midiOutChannel, soundCue-1)
 
 	out, err := midi.SendTo(*m.midiOut)
 	if err != nil {
