@@ -1,0 +1,24 @@
+midiIn: studio
+
+outputs:
+  osc:
+    ip: 127.0.0.1
+    port: 8765
+  midi-pc:
+    name: tt24
+    channel: 1
+
+midi-cue-mapping:
+  - light: 49
+    sound: 1
+  - light: 79
+    sound: 2
+  - light: 104
+    sound: 3
+  - light: 115
+    sound: 4
+  - light: 156
+    sound: 5
+  - light: 210
+    sound: 7
+
