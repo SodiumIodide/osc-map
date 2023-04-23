@@ -56,9 +56,12 @@ func main() {
 		midiMap[cm.In] = cm.Out
 	}
 
+	log.Debugf("final midi mapping: %v", midiMap)
+
 	// setup osc client
 	mscMap := &MSCMap{
 		oscClient: osc.NewClient(conf.Outputs.OSC.IP.String(), conf.Outputs.OSC.Port),
+		midiMap:   midiMap,
 	}
 
 	// connect to midi input
@@ -190,6 +193,8 @@ func (m *MSCMap) sendMidiPC(cue float64) {
 		log.Errorf("failed to send midi program change message to [%v]: %v", m.midiOut, err)
 		return
 	}
+
+	fmt.Printf("sent program change %v to midi out\n", mm.String())
 }
 
 func (m *MSCMap) sendAll() {
