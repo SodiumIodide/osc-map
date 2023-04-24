@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strconv"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/hypebeast/go-osc/osc"
 	log "github.com/sirupsen/logrus"
 
@@ -36,39 +37,23 @@ func main() {
 
 	log.SetLevel(log.DebugLevel)
 
-	confBytes, err := ioutil.ReadFile("config.yaml")
+	mscMap := &MSCMap{}
+	conf, err := mscMap.readConfig()
 	if err != nil {
 		log.Fatalf("failed to read config file: %v", err)
 	}
+	go mscMap.monitorConfig()
 
-	conf := &conf{}
-	err = yaml.Unmarshal(confBytes, conf)
-	if err != nil {
-		log.Fatalf("failed to unmarshal config file: %v", err)
-	}
-
-	// print config and exit
-	log.Debugf("config: %+v", conf)
-
-	// create midi map
-	midiMap := make(map[float64]uint8)
-	for _, cm := range conf.MidiCueMapping {
-		midiMap[cm.In] = cm.Out
-	}
-
-	log.Debugf("final midi mapping: %v", midiMap)
+	log.Debugf("final midi mapping: %v", mscMap.midiMap)
 
 	// setup osc client
-	mscMap := &MSCMap{
-		oscClient: osc.NewClient(conf.Outputs.OSC.IP.String(), conf.Outputs.OSC.Port),
-		midiMap:   midiMap,
-	}
+	mscMap.oscClient = osc.NewClient(conf.Outputs.OSC.IP.String(), conf.Outputs.OSC.Port)
 
 	// connect to midi input
 	in, err := midi.FindInPort(conf.MidiIn)
 	if err != nil {
 		fmt.Printf("can't find midi input %v\n", conf.MidiIn)
-		return
+		// return
 	}
 
 	// connect to midi output
@@ -210,4 +195,70 @@ func (m *MSCMap) sendAll() {
 		}
 		m.sendOSC("go", fmt.Sprintf("%.1f", f))
 	}
+}
+
+func (m *MSCMap) monitorConfig() {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal("NewWatcher failed: ", err)
+	}
+	defer watcher.Close()
+
+	done := make(chan bool)
+	go func() {
+		defer close(done)
+
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				_, err := m.readConfig()
+				if err != nil {
+					log.Errorf("failed to read config: %v", err)
+				}
+
+				log.Printf("config file changed: %s %s\n", event.Name, event.Op)
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Println("error:", err)
+			}
+		}
+
+	}()
+
+	err = watcher.Add("config.yaml")
+	if err != nil {
+		log.Fatal("Add failed:", err)
+	}
+	<-done
+}
+
+func (m *MSCMap) readConfig() (*conf, error) {
+	confBytes, err := ioutil.ReadFile("config.yaml")
+	if err != nil {
+		log.Fatalf("failed to read config file: %v", err)
+	}
+
+	conf := &conf{}
+	err = yaml.Unmarshal(confBytes, conf)
+	if err != nil {
+		log.Fatalf("failed to unmarshal config file: %v", err)
+	}
+
+	// print config and exit
+	log.Debugf("config: %+v", conf)
+
+	// create midi map
+	midiMap := make(map[float64]uint8)
+	for _, cm := range conf.MidiCueMapping {
+		midiMap[cm.In] = cm.Out
+	}
+
+	m.midiMap = midiMap
+
+	return conf, nil
 }
