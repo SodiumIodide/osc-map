@@ -53,7 +53,7 @@ func main() {
 	in, err := midi.FindInPort(conf.MidiIn)
 	if err != nil {
 		fmt.Printf("can't find midi input %v\n", conf.MidiIn)
-		// return
+		return
 	}
 
 	// connect to midi output
@@ -85,6 +85,7 @@ func main() {
 	stop()
 }
 
+// midiListenFunc listens for messages coming from the etc express, parses it, and sends it out to the output midi and as an osc command
 func (m *MSCMap) midiListenFunc(msg midi.Message, timestampms int32) {
 	var bt []byte
 	var ch, key, vel uint8
@@ -112,6 +113,7 @@ func (m *MSCMap) midiListenFunc(msg midi.Message, timestampms int32) {
 	}
 }
 
+// parseMSC will parse the etc msc message into a command string and a cue number
 func parseMSC(bt []byte) (command string, cue float64, err error) {
 	if len(bt) >= 9 && bt[0] == 0x7f {
 		// get cue number
@@ -142,6 +144,7 @@ func parseMSC(bt []byte) (command string, cue float64, err error) {
 	return "", 0, fmt.Errorf("not an msc packet. len: %v bt[0]: %x\n", len(bt), bt[0])
 }
 
+// sendOSC sends a message out as an osc message with address /msc/<command>/<cue number>
 func (m *MSCMap) sendOSC(command, cue string) {
 	cueFloat, err := strconv.ParseFloat(cue, 64)
 	if err != nil {
@@ -155,6 +158,7 @@ func (m *MSCMap) sendOSC(command, cue string) {
 	}
 }
 
+// sendMidiPC sends a program change message to the midi out that configured in the config
 func (m *MSCMap) sendMidiPC(cue float64) {
 	if m.midiOut == nil {
 		return
@@ -182,6 +186,7 @@ func (m *MSCMap) sendMidiPC(cue float64) {
 	fmt.Printf("sent program change %v to midi out\n", mm.String())
 }
 
+// sendAll is only for testing what messages qlc+ can see
 func (m *MSCMap) sendAll() {
 	x := big.NewRat(1, 10)
 	y := big.NewRat(9999, 10)
@@ -197,6 +202,7 @@ func (m *MSCMap) sendAll() {
 	}
 }
 
+// monitorConfig watches for changes in the config and will update the midiMap in real time so the program doesn't need to be restarted when a new cue is added to the config
 func (m *MSCMap) monitorConfig() {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
