@@ -12,6 +12,7 @@ type conf struct {
 type confOutputs struct {
 	OSC    confOutputOSC    `yaml:"osc"`
 	MIDIPC confOutputMIDIPC `yaml:"midi-pc"`
+	Qlab   bool             `yaml:"qlab"`
 }
 
 type confOutputOSC struct {

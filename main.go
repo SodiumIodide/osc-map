@@ -28,6 +28,7 @@ const (
 type MSCMap struct {
 	oscClient      *osc.Client
 	midiOut        *drivers.Out
+	qlabOut        *drivers.Out
 	midiOutChannel uint8
 	midiMap        map[float64]uint8
 }
@@ -49,29 +50,46 @@ func main() {
 	// setup osc client
 	mscMap.oscClient = osc.NewClient(conf.Outputs.OSC.IP.String(), conf.Outputs.OSC.Port)
 
+	quit := false
 	// connect to midi input
 	in, err := midi.FindInPort(conf.MidiIn)
 	if err != nil {
-		fmt.Printf("can't find midi input %v\n", conf.MidiIn)
-		return
+		log.Errorf("can't find midi input %v", conf.MidiIn)
+		quit = true
 	}
 
 	// connect to midi output
 	out, err := midi.FindOutPort(conf.Outputs.MIDIPC.Name)
 	if err != nil {
-		fmt.Printf("can't find midi output %v\n", conf.Outputs.MIDIPC.Name)
+		log.Errorf("can't find midi output %v", conf.Outputs.MIDIPC.Name)
+		quit = true
 	} else {
 		mscMap.midiOut = &out
+	}
+
+	// connect to qlab if we're using that
+	if conf.Outputs.Qlab {
+		out, err := midi.FindOutPort("QLab")
+		if err != nil {
+			log.Errorf("can't find midi output %v", "QLab")
+			quit = true
+		} else {
+			mscMap.qlabOut = &out
+		}
+	}
+
+	if quit {
+		return
 	}
 
 	// listen for midi sysex commands from etc
 	stop, err := midi.ListenTo(in, mscMap.midiListenFunc, midi.UseSysEx())
 	if err != nil {
-		fmt.Printf("ERROR: %s\n", err)
+		log.Errorf("failed to listen to midi: %v", err)
 		return
 	}
 
-	fmt.Printf("listening for midi from %v(%v) and outputting to %s:%d and %s\n", in.String(), in.Number(), conf.Outputs.OSC.IP, conf.Outputs.OSC.Port, conf.Outputs.MIDIPC.Name)
+	log.Infof("listening for midi from %v(%v) and outputting to %s:%d and %s", in.String(), in.Number(), conf.Outputs.OSC.IP, conf.Outputs.OSC.Port, conf.Outputs.MIDIPC.Name)
 
 	// listen for ctrl+c
 	c := make(chan os.Signal, 1)
@@ -91,10 +109,10 @@ func (m *MSCMap) midiListenFunc(msg midi.Message, timestampms int32) {
 	var ch, key, vel uint8
 	switch {
 	case msg.GetSysEx(&bt):
-		fmt.Printf("got sysex: % X\n", bt)
+		log.Debugf("got sysex: % X", bt)
 		command, cue, err := parseMSC(bt)
 		if err != nil {
-			fmt.Printf("failed to parse msc: %v\n", err)
+			log.Errorf("failed to parse msc: %v", err)
 		} else {
 			tc := fmt.Sprintf("%.1f", cue)
 			if string(tc[len(tc)-1:]) == "0" {
@@ -105,9 +123,9 @@ func (m *MSCMap) midiListenFunc(msg midi.Message, timestampms int32) {
 			m.sendOSC(command, tc)
 		}
 	case msg.GetNoteStart(&ch, &key, &vel):
-		fmt.Printf("starting note %s on channel %v with velocity %v\n", midi.Note(key), ch, vel)
+		log.Debugf("got starting note %s on channel %v with velocity %v", midi.Note(key), ch, vel)
 	case msg.GetNoteEnd(&ch, &key):
-		fmt.Printf("ending note %s on channel %v\n", midi.Note(key), ch)
+		log.Debugf("got ending note %s on channel %v", midi.Note(key), ch)
 	default:
 		// ignore
 	}
@@ -148,12 +166,12 @@ func parseMSC(bt []byte) (command string, cue float64, err error) {
 func (m *MSCMap) sendOSC(command, cue string) {
 	cueFloat, err := strconv.ParseFloat(cue, 64)
 	if err != nil {
-		fmt.Printf("failed to convert %v to int: %v\n", cue, err)
+		log.Errorf("failed to convert %v to int: %v", cue, err)
 	} else {
 		msg := osc.NewMessage(fmt.Sprintf("/msc/%s/%s", command, cue))
 		msg.Append(cueFloat)
 		msg.Append(command)
-		fmt.Printf("sending %v\n", msg.String())
+		log.Infof("sending osc %v\n", msg.String())
 		m.oscClient.Send(msg)
 	}
 }
@@ -183,7 +201,24 @@ func (m *MSCMap) sendMidiPC(cue float64) {
 		return
 	}
 
-	fmt.Printf("sent program change %v to midi out\n", mm.String())
+	log.Infof("sent program change %v to midi out", soundCue)
+
+	if m.qlabOut != nil {
+		mm := midi.ProgramChange(m.midiOutChannel, soundCue)
+
+		out, err := midi.SendTo(*m.qlabOut)
+		if err != nil {
+			log.Errorf("failed to get midi send function: %v", err)
+		}
+
+		err = out(mm)
+		if err != nil {
+			log.Errorf("failed to send midi program change message to [%v]: %v", m.qlabOut, err)
+			return
+		}
+
+		log.Infof("sent program change %v to qlab", soundCue)
+	}
 }
 
 // sendAll is only for testing what messages qlc+ can see
@@ -225,7 +260,7 @@ func (m *MSCMap) monitorConfig() {
 					log.Errorf("failed to read config: %v", err)
 				}
 
-				log.Printf("config file changed: %s %s\n", event.Name, event.Op)
+				log.Infof("config file changed: %s %s", event.Name, event.Op)
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return
