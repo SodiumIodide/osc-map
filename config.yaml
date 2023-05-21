@@ -32,9 +32,9 @@ midi-cue-mapping:
     sound: 15
   - light: 34
     sound: 16
+  # - light: 38
+  #   sound: 17
   - light: 38
-    sound: 17
-  - light: 40
     sound: 20
   - light: 42
     sound: 19
@@ -52,8 +52,8 @@ midi-cue-mapping:
     sound: 26
   - light: 58
     sound: 30
-  - light: 60
-    sound: 31
+  # - light: 60
+  #   sound: 31
   - light: 62
     sound: 35
   - light: 64
@@ -154,6 +154,8 @@ midi-cue-mapping:
     sound: 9
   - light: 192
     sound: 12
+  - light: 194
+    sound: 14
   - light: 200
     sound: 85
   - light: 202
@@ -185,4 +187,6 @@ midi-cue-mapping:
   - light: 228
     sound: 99
   - light: 230
-    sound: 1
+    sound: 2
+  - light: 238
+    sound: 13
