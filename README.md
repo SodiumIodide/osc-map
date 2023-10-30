@@ -33,3 +33,7 @@ message = <cue number> true <command>
 midi input: `F0 7F 01 02 01 01 32 36 35 00 31 00 F7`  (go cue 265 A/B fader)
 
 osc output: `/msc/go/265 ,iTs 265 true go`
+
+## keyboard mapping
+
+allowable characters are a-z, 0-9

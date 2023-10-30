@@ -8,10 +8,12 @@ outputs:
     name: UM-ONE
     channel: 1
   qlab: true 
+  keyboard-commands: true
 
 midi-cue-mapping:
   - light: 1
     sound: 1 
+    keyboard: "g"
   - light: 3
     sound: 3 
   - light: 4

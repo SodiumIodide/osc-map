@@ -6,12 +6,15 @@ import (
 	"math/big"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/hypebeast/go-osc/osc"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/micmonay/keybd_event"
 	"gitlab.com/gomidi/midi/v2"
 	"gitlab.com/gomidi/midi/v2/drivers"
 	_ "gitlab.com/gomidi/midi/v2/drivers/rtmididrv" // autoregisters driver
@@ -30,10 +33,13 @@ type MSCMap struct {
 	midiOut        *drivers.Out
 	qlabOut        *drivers.Out
 	midiOutChannel uint8
-	midiMap        map[float64]uint8
+	midiMap        map[float64]cueMap
+	keyBonding     *keybd_event.KeyBonding
 }
 
 func main() {
+
+	time.Sleep(5 * time.Second)
 	defer midi.CloseDriver()
 
 	log.SetLevel(log.DebugLevel)
@@ -78,7 +84,27 @@ func main() {
 		}
 	}
 
+	if conf.Outputs.KeyboardCommands {
+		kb, err := keybd_event.NewKeyBonding()
+		if err != nil {
+			log.Errorf("failed to create key bonding: %v", err)
+			quit = true
+		} else {
+
+			// For linux, it is very important to wait 2 seconds
+			if runtime.GOOS == "linux" {
+				log.Info("Please wait 2 seconds for keyboard binding...")
+				time.Sleep(2 * time.Second)
+			}
+
+			mscMap.keyBonding = &kb
+		}
+	}
+
 	if quit {
+
+		mscMap.sendKeyboardCommand(1)
+
 		return
 	}
 
@@ -120,6 +146,9 @@ func (m *MSCMap) midiListenFunc(msg midi.Message, timestampms int32) {
 			}
 
 			m.sendMidiPC(cue)
+			if m.keyBonding != nil {
+				m.sendKeyboardCommand(cue)
+			}
 			m.sendOSC(command, tc)
 		}
 	case msg.GetNoteStart(&ch, &key, &vel):
@@ -182,11 +211,12 @@ func (m *MSCMap) sendMidiPC(cue float64) {
 		return
 	}
 
-	soundCue, ok := m.midiMap[cue]
+	mc, ok := m.midiMap[cue]
 	if !ok {
 		log.Debugf("did not find cue mapping for cue[%v]", cue)
 		return
 	}
+	soundCue := mc.soundCue
 
 	mm := midi.ProgramChange(m.midiOutChannel, soundCue-1)
 
@@ -219,6 +249,36 @@ func (m *MSCMap) sendMidiPC(cue float64) {
 
 		log.Infof("sent program change %v to qlab", soundCue)
 	}
+}
+
+// sendKeyboardCommand simulates a keyboard keypress. Useful for soundboard programs
+func (m *MSCMap) sendKeyboardCommand(cue float64) {
+	if m.keyBonding == nil {
+		log.Errorf("keybonding is nil")
+		return
+	}
+
+	cueMap, ok := m.midiMap[cue]
+	if !ok {
+		log.Debugf("did not find cue mapping for cue[%v]", cue)
+		return
+	}
+
+	if cueMap.keyboardKey == -1 {
+		log.Debugf("no keyboard key specified for cue[%v]", cue)
+		return
+	}
+
+	m.keyBonding.SetKeys(cueMap.keyboardKey)
+
+	log.Debugf("sending keyboard: %v", cueMap.keyboardKey)
+
+	// Press the selected keys
+	err := m.keyBonding.Launching()
+	if err != nil {
+		log.Errorf("failed to launch key: %X", cueMap.keyboardKey)
+	}
+
 }
 
 // sendAll is only for testing what messages qlc+ can see
@@ -294,9 +354,20 @@ func (m *MSCMap) readConfig() (*conf, error) {
 	log.Debugf("config: %+v", conf)
 
 	// create midi map
-	midiMap := make(map[float64]uint8)
+	midiMap := make(map[float64]cueMap)
 	for _, cm := range conf.MidiCueMapping {
-		midiMap[cm.In] = cm.Out
+
+		// parse hex from config to int
+		keyboard, ok := KeyboardMap[cm.Keyboard]
+		if !ok {
+			keyboard = -1
+		}
+
+		newCM := cueMap{
+			soundCue:    cm.Sound,
+			keyboardKey: keyboard,
+		}
+		midiMap[cm.In] = newCM
 	}
 
 	m.midiMap = midiMap
