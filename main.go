@@ -102,9 +102,6 @@ func main() {
 	}
 
 	if quit {
-
-		mscMap.sendKeyboardCommand(1)
-
 		return
 	}
 
