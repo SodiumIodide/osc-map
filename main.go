@@ -61,6 +61,7 @@ func main() {
 	in, err := midi.FindInPort(conf.MidiIn)
 	if err != nil {
 		log.Errorf("can't find midi input %v", conf.MidiIn)
+		log.Errorf("found options [%+v]", midi.GetInPorts())
 		quit = true
 	}
 
