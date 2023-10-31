@@ -216,6 +216,10 @@ func (m *MSCMap) sendMidiPC(cue float64) {
 	}
 	soundCue := mc.soundCue
 
+	if soundCue == 0 {
+		return
+	}
+
 	mm := midi.ProgramChange(m.midiOutChannel, soundCue-1)
 
 	out, err := midi.SendTo(*m.midiOut)
