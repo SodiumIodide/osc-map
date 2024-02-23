@@ -214,26 +214,64 @@ func (m *MSCMap) sendMidiPC(cue float64) {
 		log.Debugf("did not find cue mapping for cue[%v]", cue)
 		return
 	}
+
 	soundCue := mc.soundCue
+	muteCue := mc.muteCue
+	unmuteCue := mc.unmuteCue
 
-	if soundCue == 0 {
+	if soundCue == 0 && muteCue == 0 && unmuteCue == 0 {
 		return
 	}
 
-	mm := midi.ProgramChange(m.midiOutChannel, soundCue-1)
+	if soundCue != 0 {
+		mm := midi.ProgramChange(m.midiOutChannel, soundCue-1)
+		out, err := midi.SendTo(*m.midiOut)
+		if err != nil {
+			log.Errorf("failed to get midi send function: %v", err)
+		}
 
-	out, err := midi.SendTo(*m.midiOut)
-	if err != nil {
-		log.Errorf("failed to get midi send function: %v", err)
+		err = out(mm)
+		if err != nil {
+			log.Errorf("failed to send midi program change message to [%v]: %v", m.midiOut, err)
+			return
+		}
+
+		log.Infof("sent program change %v to midi out", soundCue)
 	}
 
-	err = out(mm)
-	if err != nil {
-		log.Errorf("failed to send midi program change message to [%v]: %v", m.midiOut, err)
-		return
+	if muteCue != 0 {
+		mm := midi.NoteOn(m.midiOutChannel, muteCue-1, 0x7F)
+
+		out, err := midi.SendTo(*m.midiOut)
+		if err != nil {
+			log.Errorf("failed to get midi send function: %v", err)
+		}
+
+		err = out(mm)
+		if err != nil {
+			log.Errorf("failed to send midi notemessageto [%v]: %v", m.midiOut, err)
+			return
+		}
+
+		log.Infof("sent mute note %v to midi out", muteCue)
 	}
 
-	log.Infof("sent program change %v to midi out", soundCue)
+	if unmuteCue != 0 {
+		mm := midi.NoteOn(m.midiOutChannel, unmuteCue-1, 0x00)
+
+		out, err := midi.SendTo(*m.midiOut)
+		if err != nil {
+			log.Errorf("failed to get midi send function: %v", err)
+		}
+
+		err = out(mm)
+		if err != nil {
+			log.Errorf("failed to send midi notemessageto [%v]: %v", m.midiOut, err)
+			return
+		}
+
+		log.Infof("sent unmute note %v to midi out", muteCue)
+	}
 
 	if m.qlabOut != nil {
 		mm := midi.ProgramChange(m.midiOutChannel, soundCue)
@@ -367,6 +405,8 @@ func (m *MSCMap) readConfig() (*conf, error) {
 
 		newCM := cueMap{
 			soundCue:    cm.Sound,
+			muteCue:     cm.Mute,
+			unmuteCue:   cm.Unmute,
 			keyboardKey: keyboard,
 		}
 		midiMap[cm.In] = newCM

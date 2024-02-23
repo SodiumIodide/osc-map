@@ -11,6 +11,10 @@ outputs:
   keyboard-commands: true
 
 midi-cue-mapping:
+  - light: 1
+    unmute: 4
+  - light: 2
+    mute: 4
     # unmute Trevor
   - light: 13
     sound: 5
