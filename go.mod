@@ -1,4 +1,4 @@
-module github.com/kpelzel/msc-map
+module github.com/SodiumIodide/msc-map
 
 go 1.20
 
