@@ -13,8 +13,12 @@ outputs:
 midi-cue-mapping:
   - light: 1
     unmute: 4
+    fader: 1
+    value: 100
   - light: 2
     mute: 4
+    fader: 1
+    value: 0
     # unmute Trevor
   - light: 13
     sound: 5
