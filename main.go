@@ -185,7 +185,7 @@ func parseMSC(bt []byte) (command string, cue float64, err error) {
 		return command, cue, nil
 	}
 
-	return "", 0, fmt.Errorf("not an msc packet. len: %v bt[0]: %x\n", len(bt), bt[0])
+	return "", 0, fmt.Errorf("not an msc packet. len: %v bt[0]: %x", len(bt), bt[0])
 }
 
 // sendOSC sends a message out as an osc message with address /msc/<command>/<cue number>
@@ -276,6 +276,10 @@ func (m *MSCMap) sendMidiPC(cue float64) {
 
 	// Fader value can vary from 0 to 127, where 100 = U
 	if faderCue != 0 {
+		if faderVal > 127 {
+			log.Errorf("fader value cannot be higher than 127")
+		}
+
 		mm := midi.ControlChange(m.midiOutChannel, faderCue-1, faderVal)
 
 		out, err := midi.SendTo(*m.midiOut)
