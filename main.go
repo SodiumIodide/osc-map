@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"os/signal"
@@ -379,7 +378,7 @@ func (m *MSCMap) monitorConfig() {
 }
 
 func (m *MSCMap) readConfig() (*conf, error) {
-	confBytes, err := ioutil.ReadFile("config.yaml")
+	confBytes, err := os.ReadFile("config.yaml")
 	if err != nil {
 		log.Fatalf("failed to read config file: %v", err)
 	}
