@@ -14,6 +14,7 @@ type confOutputs struct {
 	MIDIPC           confOutputMIDIPC `yaml:"midi-pc"`
 	Qlab             bool             `yaml:"qlab"`
 	KeyboardCommands bool             `yaml:"keyboard-commands"`
+	AudioFiles       bool             `yaml:"audio-files"`
 }
 
 type confOutputOSC struct {
@@ -34,6 +35,7 @@ type confCueMapping struct {
 	FaderChannel uint8   `yaml:"fader"`
 	FaderValue   uint8   `yaml:"value"`
 	Keyboard     string  `yaml:"keyboard"`
+	AudioFile    string  `yaml:"file"`
 }
 
 type cueMap struct {
@@ -43,4 +45,5 @@ type cueMap struct {
 	faderCue    uint8
 	faderVal    uint8
 	keyboardKey int
+	audioFile   string
 }

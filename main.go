@@ -5,10 +5,15 @@ import (
 	"math/big"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"time"
 
+	"github.com/faiface/beep"
+	"github.com/faiface/beep/mp3"
+	"github.com/faiface/beep/speaker"
+	"github.com/faiface/beep/wav"
 	"github.com/fsnotify/fsnotify"
 	"github.com/hypebeast/go-osc/osc"
 	log "github.com/sirupsen/logrus"
@@ -22,9 +27,12 @@ import (
 )
 
 const (
-	DefaultMidiIn     = "Keyboard"
-	DefaultOSCOutIP   = "127.0.0.1"
-	DefaultOSCOutPort = 8765
+	DefaultMidiIn          = "Keyboard"
+	DefaultOSCOutIP        = "127.0.0.1"
+	DefaultOSCOutPort      = 8765
+	DefaultSampleRate      = 48000
+	DefaultBufferSize      = 4800 // buffer size of 1/10 second
+	DefaultResampleQuality = 4    // good balance of quality and playback time
 )
 
 type MSCMap struct {
@@ -101,6 +109,10 @@ func main() {
 		}
 	}
 
+	if conf.Outputs.AudioFiles {
+		speaker.Init(DefaultSampleRate, DefaultBufferSize)
+	}
+
 	if quit {
 		return
 	}
@@ -142,10 +154,11 @@ func (m *MSCMap) midiListenFunc(msg midi.Message, timestampms int32) {
 				tc = fmt.Sprintf("%.0f", cue)
 			}
 
-			m.sendMidiPC(cue)
+			m.sendMidiOut(cue)
 			if m.keyBonding != nil {
 				m.sendKeyboardCommand(cue)
 			}
+			go m.playAudioFile(cue)
 			m.sendOSC(command, tc)
 		}
 	case msg.GetNoteStart(&ch, &key, &vel):
@@ -202,8 +215,8 @@ func (m *MSCMap) sendOSC(command, cue string) {
 	}
 }
 
-// sendMidiPC sends a program change message to the midi out that configured in the config
-func (m *MSCMap) sendMidiPC(cue float64) {
+// sendMidiPC sends a MIDI message to the midi out that configured in the config
+func (m *MSCMap) sendMidiOut(cue float64) {
 	if m.midiOut == nil {
 		return
 	}
@@ -344,6 +357,73 @@ func (m *MSCMap) sendKeyboardCommand(cue float64) {
 
 }
 
+// play a simple audio file with no fading or level change
+func (m *MSCMap) playAudioFile(cue float64) {
+	mc, ok := m.midiMap[cue]
+	if !ok {
+		log.Debugf("did not find cue mapping for cue[%v]", cue)
+		return
+	}
+
+	filename := mc.audioFile
+
+	if filename == "" {
+		log.Debugf("did not find audio file for cue[%v]", cue)
+		return
+	}
+
+	fileExtension := filepath.Ext(filename)
+
+	if fileExtension != ".mp3" && fileExtension != ".wav" {
+		log.Errorf("incompatible file extension: %s", filename)
+		return
+	}
+
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Errorf("cannot open file %s: %v", filename, err)
+		return
+	}
+
+	if fileExtension == ".mp3" {
+		streamer, format, err := mp3.Decode(file)
+		if err != nil {
+			log.Errorf("cannot decode file %s: %v", filename, err)
+			return
+		}
+		defer streamer.Close()
+
+		// buffer size of 1/10 of a second
+		resampled := beep.Resample(DefaultResampleQuality, DefaultSampleRate, format.SampleRate, streamer)
+
+		done := make(chan bool)
+		speaker.Play(beep.Seq(resampled, beep.Callback(func() {
+			done <- true
+		})))
+
+		<-done
+	}
+
+	if fileExtension == ".wav" {
+		streamer, format, err := wav.Decode(file)
+		if err != nil {
+			log.Errorf("cannot decode file %s: %v", filename, err)
+			return
+		}
+		defer streamer.Close()
+
+		// buffer size of 1/10 of a second
+		resampled := beep.Resample(DefaultResampleQuality, DefaultSampleRate, format.SampleRate, streamer)
+
+		done := make(chan bool)
+		speaker.Play(beep.Seq(resampled, beep.Callback(func() {
+			done <- true
+		})))
+
+		<-done
+	}
+}
+
 // sendAll is only for testing what messages qlc+ can see
 func (m *MSCMap) sendAll() {
 	x := big.NewRat(1, 10)
@@ -433,6 +513,7 @@ func (m *MSCMap) readConfig() (*conf, error) {
 			faderCue:    cm.FaderChannel,
 			faderVal:    cm.FaderValue,
 			keyboardKey: keyboard,
+			audioFile:   cm.AudioFile,
 		}
 		midiMap[cm.In] = newCM
 	}
