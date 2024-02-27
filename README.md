@@ -79,7 +79,7 @@ The `file` option will trigger simple playback of an audio file given a path loc
 
 The option given here is a file path as a string, meaning in quotation marks. You can easily obtain this in Windows by navigating to the file you wish to play, right clicking it, and selecting the "copy as path" context option. It's important to note that the YAML syntax used requires Windows path delineators (backslashes) to be "escaped" by adding another backslash, so that they are correctly interpreted as backslashes and not other YAML characters. An example path that is correctly escaped would look like:
 
-`"C:\\Users\\LALT\\Documents\\Shows\\ThePlayThatGoesWrong_SFX\\door-chime.mp3".
+`"C:\\Users\\LALT\\Documents\\Shows\\ThePlayThatGoesWrong_SFX\\door-chime.mp3"`
 
 ## Example
 
