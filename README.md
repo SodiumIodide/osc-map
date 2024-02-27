@@ -8,11 +8,11 @@ Receives MSC (MIDI Show Control) messages from an etc express (sysex messages), 
 
 ## Build
 
-`go build`
+Execute `go build` in the local working directory.
 
 ## Config
 
-msc-osc will look for `config.yaml` in the local directory
+msc-map will look for `config.yaml` in the local directory.
 
 ## File construction
 
