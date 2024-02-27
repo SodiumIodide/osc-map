@@ -26,7 +26,7 @@ outputs:
         ip: 127.0.0.1
         port: 8765
     midi-pc:
-        name:UM-ONE
+        name: UM-ONE
         channel: 1
     qlab: false
     keyboard-commands: true
