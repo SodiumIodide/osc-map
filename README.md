@@ -135,8 +135,8 @@ Comments on the cues are not necessary but can help to delineate the file and un
 
 ## Brief variable description
 
-| Key                     | Value Type | Description                                                                                                  |
-|-------------------------|------------|--------------------------------------------------------------------------------------------------------------|
+| Key                       | Value Type | Description                                                                                                |
+|---------------------------|------------|------------------------------------------------------------------------------------------------------------|
 | midiIn                    | string     | name of the midi port that you want to receive input from                                                  |
 | outputs.osc.ip            | ip address | the ip address to send osc messages to                                                                     |
 | outputs.osc.port          | int        | the port of to send osc messages to                                                                        |
