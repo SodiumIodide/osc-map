@@ -108,13 +108,15 @@ outputs:
     audio-files: true
 
 midi-cue-mapping:
-    # Show opening, raise volume for dialogue on channel 1 and unmute 4 for entrance while doorbell rings.
+    # Show opening, raise volume for dialogue on channel 1 and unmute 4 for
+    # entrance while doorbell rings.
     - light: 1
       unmute: 4
       fader: 1
       value: 100
       file: "C:\\Users\\LALT\\Documents\\Shows\\MyCoolShow\\door-chime.mp3"
-    # Next scene, mute 4 and bring channel 2 down to half volume because the actor yells for this part.
+    # Next scene, mute 4 and bring channel 2 down to half volume because the
+    # actor yells for this part.
     - light: 2
       mute: 4
       fader: 2
@@ -122,7 +124,8 @@ midi-cue-mapping:
     # Murder happens!
     - light: 5
       file: "C:\\Users\\LALT\\Documents\\Shows\\MyCoolShow\\gunshot.wav"
-    # For the intermission, use new soundboard snapshot and play fun music in audio cue software.
+    # For the intermission, use new soundboard snapshot and play fun music
+    # in audio cue software.
     - light: 13
       sound: 5
       keyboard: "J"
