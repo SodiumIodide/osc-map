@@ -1,0 +1,99 @@
+midiIn: "USB MIDI Interface"
+
+outputs:
+  osc:
+    ip: 127.0.0.1
+    port: 8765
+  midi-pc:
+    name: UM-ONE
+    channel: 1
+  qlab: false 
+  keyboard-commands: true
+  audio-files: true
+
+midi-cue-mapping:
+  - light: 1
+    unmute: 4
+    fader: 1
+    value: 100
+    file: "C:\\Users\\LALT\\Documents\\Shows\\ThePlayThatGoesWrong_SFX\\door-chime.mp3"
+  - light: 2
+    mute: 4
+    fader: 1
+    value: 0
+  - light: 5
+    file: "C:\\Users\\LALT\\Documents\\Shows\\ThePlayThatGoesWrong_SFX\\clock-single.mp3"
+    # unmute Trevor
+  - light: 13
+    sound: 5
+    # remute Trevor
+  - light: 14
+    sound: 4
+  - light: 30
+    keyboard: "I"
+  - light: 35
+    keyboard: "I"
+  - light: 40
+    keyboard: "J"
+  - light: 43
+    keyboard: "1"
+  # unmute Trevor
+  - light: 44
+    keyboard: "I"
+    sound: 5
+  # remute Trevor
+  - light: 46
+    sound: 4
+  - light: 49
+    keyboard: "T"
+  - light: 50
+    keyboard: "Y"
+  - light: 52
+    keyboard: "E"
+  - light: 68
+    keyboard: "Z"
+  - light: 70
+    keyboard: "2"
+  - light: 72
+    keyboard: "S"
+  - light: 85
+    keyboard: "I"
+  - light: 90
+    keyboard: "I"
+  - light: 95
+    keyboard: "P"
+  - light: 96
+    keyboard: "H"
+  - light: 110
+    keyboard: "G"
+  - light: 112
+    keyboard: "3"
+  # unmute Trevor
+  - light: 122
+    sound: 5
+  # remute Trevor
+  - light: 123
+    sound: 4
+  - light: 135
+    keyboard: "W"
+  - light: 140
+    keyboard: "Z"
+  - light: 142
+    keyboard: "2"
+  - light: 143
+    keyboard: "Q"
+  - light: 145
+    keyboard: "E"
+  - light: 147
+    keyboard: "X"
+  # unmute Trevor
+  - light: 252
+    keyboard: "L"
+    sound: 5
+  - light: 253
+    keyboard: "F"
+  # remute Trevor
+  - light: 255
+    sound: 4
+  - light: 257
+    keyboard: "D"
