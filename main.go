@@ -233,7 +233,7 @@ func (m *MSCMap) sendMidiOut(cue float64) {
 	faderCue := mc.faderCue
 	faderVal := mc.faderVal
 
-	if soundCue == 0 && muteCue == 0 && unmuteCue == 0 {
+	if soundCue == 0 && len(muteCue) == 0 && len(unmuteCue) == 0 && len(faderCue) == 0 {
 		return
 	}
 
@@ -253,60 +253,69 @@ func (m *MSCMap) sendMidiOut(cue float64) {
 		log.Infof("sent program change %v to midi out", soundCue)
 	}
 
-	if muteCue != 0 {
-		mm := midi.NoteOn(m.midiOutChannel, muteCue-1, 0x7F)
+	if len(muteCue) != 0 {
+		for i := 0; i < len(muteCue); i++ {
+			mm := midi.NoteOn(m.midiOutChannel, muteCue[i]-1, 0x7F)
 
-		out, err := midi.SendTo(*m.midiOut)
-		if err != nil {
-			log.Errorf("failed to get midi send function: %v", err)
+			out, err := midi.SendTo(*m.midiOut)
+			if err != nil {
+				log.Errorf("failed to get midi send function: %v", err)
+			}
+
+			err = out(mm)
+			if err != nil {
+				log.Errorf("failed to send midi note message to [%v]: %v", m.midiOut, err)
+				return
+			}
+
+			log.Infof("sent mute note %v to midi out", muteCue)
 		}
-
-		err = out(mm)
-		if err != nil {
-			log.Errorf("failed to send midi note message to [%v]: %v", m.midiOut, err)
-			return
-		}
-
-		log.Infof("sent mute note %v to midi out", muteCue)
 	}
 
-	if unmuteCue != 0 {
-		mm := midi.NoteOn(m.midiOutChannel, unmuteCue-1, 0x00)
+	if len(unmuteCue) != 0 {
+		for i := 0; i < len(unmuteCue); i++ {
+			mm := midi.NoteOn(m.midiOutChannel, unmuteCue[i]-1, 0x00)
 
-		out, err := midi.SendTo(*m.midiOut)
-		if err != nil {
-			log.Errorf("failed to get midi send function: %v", err)
+			out, err := midi.SendTo(*m.midiOut)
+			if err != nil {
+				log.Errorf("failed to get midi send function: %v", err)
+			}
+
+			err = out(mm)
+			if err != nil {
+				log.Errorf("failed to send midi note message to [%v]: %v", m.midiOut, err)
+				return
+			}
+
+			log.Infof("sent unmute note %v to midi out", muteCue)
 		}
-
-		err = out(mm)
-		if err != nil {
-			log.Errorf("failed to send midi note message to [%v]: %v", m.midiOut, err)
-			return
-		}
-
-		log.Infof("sent unmute note %v to midi out", muteCue)
 	}
 
 	// Fader value can vary from 0 to 127, where 100 = U
-	if faderCue != 0 {
-		if faderVal > 127 {
-			log.Errorf("fader value cannot be higher than 127")
+	if len(faderCue) != 0 {
+		if len(faderCue) != len(faderVal) {
+			log.Errorf("each fader cue needs a fader value")
 		}
+		for i := 0; i < len(faderCue); i++ {
+			if faderVal[i] > 127 {
+				log.Errorf("fader value cannot be higher than 127")
+			}
 
-		mm := midi.ControlChange(m.midiOutChannel, faderCue-1, faderVal)
+			mm := midi.ControlChange(m.midiOutChannel, faderCue[i]-1, faderVal[i])
 
-		out, err := midi.SendTo(*m.midiOut)
-		if err != nil {
-			log.Errorf("failed to get midi send function: %v", err)
+			out, err := midi.SendTo(*m.midiOut)
+			if err != nil {
+				log.Errorf("failed to get midi send function: %v", err)
+			}
+
+			err = out(mm)
+			if err != nil {
+				log.Errorf("failed to send midi control change to [%v]: %v", m.midiOut, err)
+				return
+			}
+
+			log.Infof("sent fader value %v, %v control change to midi out", faderCue, faderVal)
 		}
-
-		err = out(mm)
-		if err != nil {
-			log.Errorf("failed to send midi control change to [%v]: %v", m.midiOut, err)
-			return
-		}
-
-		log.Infof("sent fader value %v, %v control change to midi out", faderCue, faderVal)
 	}
 
 	if m.qlabOut != nil {

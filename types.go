@@ -30,20 +30,20 @@ type confOutputMIDIPC struct {
 type confCueMapping struct {
 	In           float64 `yaml:"light"`
 	Sound        uint8   `yaml:"sound"`
-	Mute         uint8   `yaml:"mute"`
-	Unmute       uint8   `yaml:"unmute"`
-	FaderChannel uint8   `yaml:"fader"`
-	FaderValue   uint8   `yaml:"value"`
+	Mute         []uint8 `yaml:"mute"`
+	Unmute       []uint8 `yaml:"unmute"`
+	FaderChannel []uint8 `yaml:"fader"`
+	FaderValue   []uint8 `yaml:"value"`
 	Keyboard     string  `yaml:"keyboard"`
 	AudioFile    string  `yaml:"file"`
 }
 
 type cueMap struct {
 	soundCue    uint8
-	muteCue     uint8
-	unmuteCue   uint8
-	faderCue    uint8
-	faderVal    uint8
+	muteCue     []uint8
+	unmuteCue   []uint8
+	faderCue    []uint8
+	faderVal    []uint8
 	keyboardKey int
 	audioFile   string
 }
