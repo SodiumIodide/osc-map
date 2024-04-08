@@ -49,19 +49,17 @@ Following the above header, a new YAML list may be constructed titled `midi-cue-
 
 The `sound` option corresponds to a snapshot number on the soundboard. When the corresponding light cue is received, the soundboard will load the snapshot number specified by the number provided. There is some latency to this command which is endemic to the soundboard firmware itself.
 
-### `unmute` - Integer
+### `unmute` - \[Integer\]
 
-The `unmute` option will unmute the channel ID matching the number provided.
+The `unmute` option will unmute the channel IDs matching the numbers provided.
 
-### `mute` - Integer
+### `mute` - \[Integer\]
 
-The `mute` option will mute the channel ID matching the number provided.
+The `mute` option will mute the channel IDs matching the numbers provided.
 
-### `fader` - Integer & `value` - Integer
+### `fader` - \[Integer\] & `value` - \[Integer\]
 
-The `fader` option will receive an integer number corresponding to a channel ID. Proper use of this option also requires a `value` to be provided as an integer. The `value` is the relative volume level that the fader will be set to. The `value` can be in the range of 0 to 127, with 100 corresponding to the 0 or "neutral" dB volume level on the fader, represented by the signal "U" on the tt24 faders. Similarly, using a `value` of 0 will "minimize" the fader, setting the volume to negative infinity, effectively muting the channel. Using a `value` of 127 will "maximize" the fader, setting the volume to +10 dB. As a note, the fader levels are in logarithmically scaled steps.
-
-If a `fader` option is used and a `value` is not also given, the default behavior is to use a `value` of 0 which sets the fader volume to negative infinity, effectively muting the channel.
+The `fader` option will receive an array of integer numbers corresponding to channel IDs. Proper use of this option also requires an equal number of `value` integers to be provided. The `value` is the relative volume level that the fader will be set to. The `value` can be in the range of 0 to 127, with 100 corresponding to the 0 or "neutral" dB volume level on the fader, represented by the signal "U" on the tt24 faders. Similarly, using a `value` of 0 will "minimize" the fader, setting the volume to negative infinity, effectively muting the channel. Using a `value` of 127 will "maximize" the fader, setting the volume to +10 dB. As a note, the fader levels are in logarithmically scaled steps.
 
 ### `keyboard` - String
 
@@ -111,16 +109,16 @@ midi-cue-mapping:
     # Show opening, raise volume for dialogue on channel 1 and unmute 4 for
     # entrance while doorbell rings.
     - light: 1
-      unmute: 4
-      fader: 1
-      value: 100
+      unmute: [4]
+      fader: [1]
+      value: [100]
       file: "C:\\Users\\LALT\\Documents\\Shows\\MyCoolShow\\door-chime.mp3"
-    # Next scene, mute 4 and bring channel 2 down to half volume because the
-    # actor yells for this part.
+    # Next scene, mute 1 and 4, and bring channels 2 and 3 down to half volume because the
+    # actors yell for this part, bring channel 5 to neutral volume
     - light: 2
-      mute: 4
-      fader: 2
-      value: 50
+      mute: [1, 4]
+      fader: [2, 3, 5]
+      value: [50, 50, 100]
     # Murder happens!
     - light: 5
       file: "C:\\Users\\LALT\\Documents\\Shows\\MyCoolShow\\gunshot.wav"
@@ -140,21 +138,21 @@ Comments on the cues are not necessary but can help to delineate the file and un
 
 | Key                       | Value Type | Description                                                                                                |
 |---------------------------|------------|------------------------------------------------------------------------------------------------------------|
-| midiIn                    | string     | name of the midi port that you want to receive input from                                                  |
-| outputs.osc.ip            | ip address | the ip address to send osc messages to                                                                     |
-| outputs.osc.port          | int        | the port of to send osc messages to                                                                        |
-| outputs.midi-pc.name      | string     | name of the midi port that you want to send program change messages to                                     |
-| outputs.midi-pc.channel   | int        | the midi channel that you want to send program change messages to                                          |
-| outputs.qlab              | boolean    | true or false depending on if you want to send program change messages to qlab running on the same machine |
-| midi-cue-mapping          | array      | list of midi cue mappings                                                                                  |
-| midi-cue-mapping.light    | double     | the light cue to listen for from the etc express light board                                               |
-| midi-cue-mapping.sound    | int        | the program change cue to send to the tt24 sound board to change soundboard snapshot                       |
-| midi-cue-mapping.unmute   | int        | the tt24 channel to unmute                                                                                 |
-| midi-cue-mapping.mute     | int        | the tt24 channel to mute                                                                                   |
-| midi-cue-mapping.fader    | int        | the tt24 channel to adjust the fader value of                                                              |
-| midi-cue-mapping.value    | int        | if adjusting a fader, the value to set it at from 0-127                                                    |
-| midi-cue-mapping.keyboard | string     | a keypress to trigger on the local machine                                                                 |
-| midi-cue-mapping.file     | string     | path to an mp3 or wav file to play                                                                         |
+| midiIn                    | string       | name of the midi port that you want to receive input from                                                  |
+| outputs.osc.ip            | ip address   | the ip address to send osc messages to                                                                     |
+| outputs.osc.port          | int          | the port of to send osc messages to                                                                        |
+| outputs.midi-pc.name      | string       | name of the midi port that you want to send program change messages to                                     |
+| outputs.midi-pc.channel   | int          | the midi channel that you want to send program change messages to                                          |
+| outputs.qlab              | boolean      | true or false depending on if you want to send program change messages to qlab running on the same machine |
+| midi-cue-mapping          | array        | list of midi cue mappings                                                                                  |
+| midi-cue-mapping.light    | double       | the light cue to listen for from the etc express light board                                               |
+| midi-cue-mapping.sound    | int          | the program change cue to send to the tt24 sound board to change soundboard snapshot                       |
+| midi-cue-mapping.unmute   | Array\[int\] | the tt24 channel to unmute                                                                                 |
+| midi-cue-mapping.mute     | Array\[int\] | the tt24 channel to mute                                                                                   |
+| midi-cue-mapping.fader    | Array\[int\] | the tt24 channel to adjust the fader value of                                                              |
+| midi-cue-mapping.value    | Array\[int\] | if adjusting a fader, the value to set it at from 0-127                                                    |
+| midi-cue-mapping.keyboard | string       | a keypress to trigger on the local machine                                                                 |
+| midi-cue-mapping.file     | string       | path to an mp3 or wav file to play                                                                         |
 
 ## Output msc message format
 
