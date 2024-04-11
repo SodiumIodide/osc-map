@@ -45,6 +45,9 @@ Following the above header, a new YAML list may be constructed titled `midi-cue-
 - `keyboard`
 - `file`
 
+#### NOTE
+It is very important to keep a consistent spacing and hypen delineation in this file. If a `failure to unmarshal config file` error is shown when executing from a command prompt like PowerShell, users should double-check the indentation of all entries in the file.
+
 ### `sound` - Integer
 
 The `sound` option corresponds to a snapshot number on the soundboard. When the corresponding light cue is received, the soundboard will load the snapshot number specified by the number provided. There is some latency to this command which is endemic to the soundboard firmware itself.
