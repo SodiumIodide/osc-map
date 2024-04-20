@@ -287,7 +287,7 @@ func (m *MSCMap) sendMidiOut(cue float64) {
 				return
 			}
 
-			log.Infof("sent unmute note %v to midi out", muteCue)
+			log.Infof("sent unmute note %v to midi out", unmuteCue)
 		}
 	}
 
