@@ -267,9 +267,9 @@ func (m *MSCMap) sendMidiOut(cue float64) {
 				log.Errorf("failed to send midi note message to [%v]: %v", m.midiOut, err)
 				return
 			}
-
-			log.Infof("sent mute note %v to midi out", muteCue)
 		}
+
+		log.Infof("sent mute note %v to midi out", muteCue)
 	}
 
 	if len(unmuteCue) != 0 {
@@ -286,9 +286,9 @@ func (m *MSCMap) sendMidiOut(cue float64) {
 				log.Errorf("failed to send midi note message to [%v]: %v", m.midiOut, err)
 				return
 			}
-
-			log.Infof("sent unmute note %v to midi out", unmuteCue)
 		}
+
+		log.Infof("sent unmute note %v to midi out", unmuteCue)
 	}
 
 	// Fader value can vary from 0 to 127, where 100 = U
@@ -313,9 +313,9 @@ func (m *MSCMap) sendMidiOut(cue float64) {
 				log.Errorf("failed to send midi control change to [%v]: %v", m.midiOut, err)
 				return
 			}
-
-			log.Infof("sent fader value %v, %v control change to midi out", faderCue, faderVal)
 		}
+
+		log.Infof("sent fader value %v, %v control change to midi out", faderCue, faderVal)
 	}
 
 	if m.qlabOut != nil {
