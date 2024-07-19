@@ -15,6 +15,7 @@ type confOutputs struct {
 	Qlab             bool             `yaml:"qlab"`
 	KeyboardCommands bool             `yaml:"keyboard-commands"`
 	AudioFiles       bool             `yaml:"audio-files"`
+	HomeAssistant    bool             `yaml:"homeassistant"`
 }
 
 type confOutputOSC struct {
@@ -36,6 +37,8 @@ type confCueMapping struct {
 	FaderValue   []uint8 `yaml:"value"`
 	Keyboard     string  `yaml:"keyboard"`
 	AudioFile    string  `yaml:"file"`
+	HouseLight   uint8   `yaml:"houselight"`
+	LightScene   string  `yaml:"housescene"`
 }
 
 type cueMap struct {
@@ -46,4 +49,11 @@ type cueMap struct {
 	faderVal    []uint8
 	keyboardKey int
 	audioFile   string
+	houseLight  uint8
+	lightScene  string
+}
+
+// Struct to represent the HomeAssistant API response
+type Response struct {
+	State string `json:"state"`
 }

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"math/big"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -27,12 +30,13 @@ import (
 )
 
 const (
-	DefaultMidiIn          = "Keyboard"
-	DefaultOSCOutIP        = "127.0.0.1"
-	DefaultOSCOutPort      = 8765
-	DefaultSampleRate      = 48000
-	DefaultBufferSize      = 4800 // buffer size of 1/10 second
-	DefaultResampleQuality = 4    // good balance of quality and playback time
+	DefaultMidiIn            = "Keyboard"
+	DefaultOSCOutIP          = "127.0.0.1"
+	DefaultOSCOutPort        = 8765
+	DefaultSampleRate        = 48000
+	DefaultBufferSize        = 4800 // buffer size of 1/10 second
+	DefaultResampleQuality   = 4    // good balance of quality and playback time
+	DefaultHomeAssistantHTTP = "http://homeassistant.local"
 )
 
 type MSCMap struct {
@@ -159,6 +163,7 @@ func (m *MSCMap) midiListenFunc(msg midi.Message, timestampms int32) {
 				m.sendKeyboardCommand(cue)
 			}
 			go m.playAudioFile(cue)
+			go m.toggleLight(cue)
 			m.sendOSC(command, tc)
 		}
 	case msg.GetNoteStart(&ch, &key, &vel):
@@ -431,6 +436,89 @@ func (m *MSCMap) playAudioFile(cue float64) {
 
 		<-done
 	}
+}
+
+func (m *MSCMap) sceneSelect(cue float64) {
+	mc, ok := m.midiMap[cue]
+	if !ok {
+		log.Debugf("did not find cue mapping for cue[%v]", cue)
+		return
+	}
+
+	scene := mc.lightScene
+
+	// Define the URL to the light entity
+
+}
+
+func (m *MSCMap) toggleLight(cue float64) {
+	mc, ok := m.midiMap[cue]
+	if !ok {
+		log.Debugf("did not find cue mapping for cue[%v]", cue)
+		return
+	}
+
+	lightID := mc.houseLight
+
+	// Define the URL to the light entity
+	url := fmt.Sprintf("%s:%s/api/states/%d", DefaultHomeAssistantHTTP, os.Getenv("HAPORT"), lightID)
+
+	// authtoken from the environment
+	authToken := os.Getenv("HAKEY")
+
+	// Define the new state to toggle to
+	newState := "on"
+
+	// Get current state
+	currentResponse, err := http.Get(url)
+	if err != nil {
+		log.Errorf("did not find homeassistant url: %s", url)
+		return
+	}
+
+	defer currentResponse.Body.Close()
+
+	var currentState Response
+	if err := json.NewDecoder(currentResponse.Body).Decode(&currentState); err != nil {
+		log.Errorf("cannot decode json response: %v", err)
+		return
+	}
+
+	// Toggle state
+	if currentState.State == "on" {
+		newState = "off"
+	}
+
+	// Define the payload
+	payload := map[string]string{"state": newState}
+
+	// Convert payload to JSON
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		log.Errorf("cannot marshal a json payload %s: %v", payload, err)
+		return
+	}
+
+	// Create request
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		log.Errorf("cannot create HTTP POST reques\n%s\n%v", jsonPayload, err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+authToken)
+
+	// Send request
+	client := &http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		log.Errorf("cannot send request to client: %v", err)
+		return
+	}
+	defer response.Body.Close()
+
+	// Print response status
+	fmt.Println("Response Status:", response.Status)
 }
 
 // sendAll is only for testing what messages qlc+ can see
