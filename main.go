@@ -37,6 +37,7 @@ const (
 	DefaultBufferSize        = 4800 // buffer size of 1/10 second
 	DefaultResampleQuality   = 4    // good balance of quality and playback time
 	DefaultHomeAssistantHTTP = "http://homeassistant.local"
+	DefaultHomeAssistantPort = 80
 )
 
 type MSCMap struct {
@@ -490,7 +491,7 @@ func (m *MSCMap) toggleLight(cue float64) {
 				} else {
 					transition = transitions[i]
 				}
-				url := "http://homeassistant.local:80/api/services/light/turn_on"
+				url := fmt.Sprintf("%s:%d/api/services/light/turn_on", DefaultHomeAssistantHTTP, DefaultHomeAssistantPort)
 
 				// Check effect type - important to set for transition times to or away from light board control
 				if effect == "None" {

@@ -15,7 +15,6 @@ type confOutputs struct {
 	Qlab             bool             `yaml:"qlab"`
 	KeyboardCommands bool             `yaml:"keyboard-commands"`
 	AudioFiles       bool             `yaml:"audio-files"`
-	HomeAssistant    bool             `yaml:"homeassistant"`
 }
 
 type confOutputOSC struct {
