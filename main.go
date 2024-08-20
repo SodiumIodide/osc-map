@@ -457,6 +457,7 @@ func (m *MSCMap) toggleLight(cue float64) {
 	}
 
 	if len(lightIDs) != 0 {
+		// Check length errors
 		if len(lightIDs) != len(transitions) {
 			if len(transitions) != 1 {
 				log.Errorf("unmatched transitions list length to number of lights in cue[%v]", cue)
@@ -469,6 +470,10 @@ func (m *MSCMap) toggleLight(cue float64) {
 				return
 			}
 		}
+
+		// Make client
+		client := &http.Client{}
+
 		for i := 0; i < len(lightIDs); i++ {
 			go func(i int, lightIDs []uint8, transitions []int, effects []string, rgbw []int) {
 
@@ -487,11 +492,13 @@ func (m *MSCMap) toggleLight(cue float64) {
 				}
 				url := "http://homeassistant.local:80/api/services/light/turn_on"
 
+				// Check effect type - important to set for transition times to or away from light board control
 				if effect == "None" {
 					data := LightRequestData{
 						Entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
 						Rgbw_color: []int{0, 0, 0, 0},
-						Effect:     effect,
+						Transition: 0,
+						Effect:     "None",
 					}
 
 					jsonData, err := json.Marshal(&data)
@@ -503,13 +510,9 @@ func (m *MSCMap) toggleLight(cue float64) {
 						log.Errorf("error creating request: %v", err)
 					}
 
-					fmt.Printf("%+v", req)
-
 					req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("HAKEY")))
 					req.Header.Set("Content-Type", "application/json")
 
-					// Make client
-					client := &http.Client{}
 					resp, err := client.Do(req)
 					if err != nil {
 						log.Errorf("error sending request: %v", err)
@@ -522,7 +525,7 @@ func (m *MSCMap) toggleLight(cue float64) {
 						Entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
 						Rgbw_color: rgbw,
 						Transition: transition,
-						Effect:     effect,
+						Effect:     "None",
 					}
 
 					jsonData, err = json.Marshal(&data)
@@ -553,7 +556,7 @@ func (m *MSCMap) toggleLight(cue float64) {
 						Entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
 						Rgbw_color: rgbw,
 						Transition: transition,
-						Effect:     effect,
+						Effect:     "None",
 					}
 
 					jsonData, err := json.Marshal(&data)
@@ -585,7 +588,8 @@ func (m *MSCMap) toggleLight(cue float64) {
 					data = LightRequestData{
 						Entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
 						Rgbw_color: rgbw,
-						Effect:     "None",
+						Transition: 0,
+						Effect:     "Light Board Control",
 					}
 
 					jsonData, err = json.Marshal(&data)
@@ -612,43 +616,6 @@ func (m *MSCMap) toggleLight(cue float64) {
 					defer resp.Body.Close()
 					fmt.Println("Response Status:", resp.Status)
 				}
-
-				data := LightRequestData{
-					Entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
-					Rgbw_color: []int{0, 0, 0, 0},
-					Effect:     effect,
-				}
-
-				data = LightRequestData{
-					Entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
-					Rgbw_color: rgbw,
-					Effect:     effect,
-					Transition: transition,
-				}
-
-				jsonData, err := json.Marshal(&data)
-				if err != nil {
-					log.Errorf("unable to create json data: %v", err)
-				}
-				req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-				if err != nil {
-					log.Errorf("error creating request: %v", err)
-				}
-
-				fmt.Printf("%+v", req)
-
-				req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("HAKEY")))
-				req.Header.Set("Content-Type", "application/json")
-
-				// Make client
-				client := &http.Client{}
-				resp, err := client.Do(req)
-				if err != nil {
-					log.Errorf("error sending request: %v", err)
-				}
-
-				defer resp.Body.Close()
-				fmt.Println("Response Status:", resp.Status)
 			}(i, lightIDs, transitions, effects, rgbw)
 		}
 	}
