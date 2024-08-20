@@ -712,7 +712,7 @@ func (m *MSCMap) readConfig() (*conf, error) {
 			faderVal:    cm.FaderValue,
 			keyboardKey: keyboard,
 			audioFile:   cm.AudioFile,
-			houseLight:  cm.HouseLight,
+			houseLights: cm.HouseLights,
 			rgbw:        cm.RGBW,
 			transitions: cm.Transitions,
 			effects:     cm.Effects,

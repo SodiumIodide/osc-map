@@ -10,7 +10,6 @@ outputs:
   qlab: false 
   keyboard-commands: true
   audio-files: true
-  homeassistant: true
 
 # LEGEND
 #  5 - Small Allison
@@ -58,13 +57,13 @@ midi-cue-mapping:
   - light: 25
     mute: [10]
     unmute: [16]
-    houselight: [10]
+    houselights: [10]
     rgbw: [100, 100, 100, 100]
     transitions: [10]
     effects: ["None"]
   - light: 26
     unmute: [12]
-    houselight: [10]
+    houselights: [10]
     rgbw: [0, 0, 0, 0]
     transitions: [10]
     effects: ["Light Board Control"]
