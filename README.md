@@ -44,6 +44,10 @@ Following the above header, a new YAML list may be constructed titled `midi-cue-
   - `value`
 - `keyboard`
 - `file`
+- `houselights`
+  - `rgbw`
+  - `transitions`
+  - `effects`
 
 #### NOTE
 It is very important to keep a consistent spacing and hypen delineation in this file. If a `failure to unmarshal config file` error is shown when executing from a command prompt like PowerShell, users should double-check the indentation of all entries in the file.
@@ -81,6 +85,50 @@ The `file` option will trigger simple playback of an audio file given a path loc
 The option given here is a file path as a string, meaning in quotation marks. You can easily obtain this in Windows by navigating to the file you wish to play, right clicking it, and selecting the "copy as path" context option. It's important to note that the YAML syntax used requires Windows path delineators (backslashes) to be "escaped" by adding another backslash, so that they are correctly interpreted as backslashes and not other YAML characters. An example path that is correctly escaped would look like:
 
 `"C:\\Users\\LALT\\Documents\\Shows\\ThePlayThatGoesWrong_SFX\\door-chime.mp3"`
+
+### `houselights` - \[Integer\] & `rgbw` \[Integer\] & `effects` \[String\]
+
+The `houselights` option will take a list of integers corresponding to house light numbers. The house lights are numbered according to the following schema:
+
+| Stage | Stage | Stage | Stage |
+| ----- | ----- | ----- | ----- |
+| 1     | 2     | 3     | 4     |
+| Joist | Joist | Joist | Joist |
+| 5     | 6     | 7     | 8     |
+| 9     | 10    | 11    | 12    |
+| 13    | 14    | 15    | 16    |
+| 17    | 18    | 19    | 20    |
+| Booth | Back  | Back  | Back  |
+
+Any numbers greater than 20 will not be functional. Along with the `houselights` list, you can include a 4 digit RGBW value in the form of an integer list from 0-255 for each value to assign a color profile for the specified LED bulbs. As such, this list can range from `[0, 0, 0, 0]` for no light effect to `[255, 255, 255, 255]` for a full light effect. There are theories and sciences behind mixing RGBW values which are outside the scope of this README, so experimentation is encouraged.
+
+The `transitions` list requires integer inputs that correspond to the number of seconds that it takes for the light transition to occur. Note that LED light bulbs can have unexpected color variations due to differences in firmware programming when applying transition length effects. If precise color control is extremely important, it may be best to stick to transition times of 0. If smoothness of lighting effects is desired, then experimentation may be required with RGBW values and transition times to limit any unwanted color variations from the scene.
+
+The final list useful for unitary control of the house lights is the `effects` list, which is a list of strings. Generally, the strings used should be `"None"` or `"Light Board Control"`. To allow for unitary control of the house lights, the effect `"None"` must be used such that the DMX signals emitted from the lightboard do not override the selected `rgbw` values. To relinquish unitary control via this program and allow for lightboard signals to effect the full universe of house lights again, please pass in the `"Light Board Control"` effect with a cue.
+
+Other effects are possible but likely of limited utility during shows, such as `"Strobe"`, `"Fast Rainbow"`, `"Slow Rainbow"`, and others. These may be viewed in the ESPHome YAML files within the HomeAssistant server configuration.
+
+If all lights in the list given by the `houselights` definition receive the same effect, it is possible to omit repeating the effect and transition lists and just include one value. e.g.:
+
+```yaml
+- light: 25
+  houselights: [10, 11, 12]
+  rgbw: [255, 70, 0, 255]
+  transitions: [0]
+  effects: ["None"]
+```
+
+The above snippet will remove lightboard control and allocate the designated RGBW values to house lights 10, 11, and 12 with no transition time on lightboard cue 25. Please remember to re-enable lightboard DMX control at a later cue if necessary, by doing something similar:
+
+```yaml
+- light: 26
+  houselights: [10, 11, 12]
+  rgbw: [0, 0, 0, 0]
+  transitions: [3]
+  effects: ["Light Board Control"]
+```
+
+If multiple controls and transition times are desired for multiple different lights, they will correspond to the positions in the list provided by the `houselight` variable. Mixing and matching transitions and effects is possible.
 
 ## Example
 
@@ -139,23 +187,27 @@ Comments on the cues are not necessary but can help to delineate the file and un
 
 ## Brief variable description
 
-| Key                       | Value Type | Description                                                                                                |
-|---------------------------|------------|------------------------------------------------------------------------------------------------------------|
-| midiIn                    | string       | name of the midi port that you want to receive input from                                                  |
-| outputs.osc.ip            | ip address   | the ip address to send osc messages to                                                                     |
-| outputs.osc.port          | int          | the port of to send osc messages to                                                                        |
-| outputs.midi-pc.name      | string       | name of the midi port that you want to send program change messages to                                     |
-| outputs.midi-pc.channel   | int          | the midi channel that you want to send program change messages to                                          |
-| outputs.qlab              | boolean      | true or false depending on if you want to send program change messages to qlab running on the same machine |
-| midi-cue-mapping          | array        | list of midi cue mappings                                                                                  |
-| midi-cue-mapping.light    | double       | the light cue to listen for from the etc express light board                                               |
-| midi-cue-mapping.sound    | int          | the program change cue to send to the tt24 sound board to change soundboard snapshot                       |
-| midi-cue-mapping.unmute   | Array\[int\] | the tt24 channel to unmute                                                                                 |
-| midi-cue-mapping.mute     | Array\[int\] | the tt24 channel to mute                                                                                   |
-| midi-cue-mapping.fader    | Array\[int\] | the tt24 channel to adjust the fader value of                                                              |
-| midi-cue-mapping.value    | Array\[int\] | if adjusting a fader, the value to set it at from 0-127                                                    |
-| midi-cue-mapping.keyboard | string       | a keypress to trigger on the local machine                                                                 |
-| midi-cue-mapping.file     | string       | path to an mp3 or wav file to play                                                                         |
+| Key                          | Value Type      | Description                                                                                                |
+|------------------------------|-----------------|------------------------------------------------------------------------------------------------------------|
+| midiIn                       | string          | name of the midi port that you want to receive input from                                                  |
+| outputs.osc.ip               | ip address      | the ip address to send osc messages to                                                                     |
+| outputs.osc.port             | int             | the port of to send osc messages to                                                                        |
+| outputs.midi-pc.name         | string          | name of the midi port that you want to send program change messages to                                     |
+| outputs.midi-pc.channel      | int             | the midi channel that you want to send program change messages to                                          |
+| outputs.qlab                 | boolean         | true or false depending on if you want to send program change messages to qlab running on the same machine |
+| midi-cue-mapping             | array           | list of midi cue mappings                                                                                  |
+| midi-cue-mapping.light       | double          | the light cue to listen for from the etc express light board                                               |
+| midi-cue-mapping.sound       | int             | the program change cue to send to the tt24 sound board to change soundboard snapshot                       |
+| midi-cue-mapping.unmute      | Array\[int\]    | the tt24 channel to unmute                                                                                 |
+| midi-cue-mapping.mute        | Array\[int\]    | the tt24 channel to mute                                                                                   |
+| midi-cue-mapping.fader       | Array\[int\]    | the tt24 channel to adjust the fader value of                                                              |
+| midi-cue-mapping.value       | Array\[int\]    | if adjusting a fader, the value to set it at from 0-127                                                    |
+| midi-cue-mapping.keyboard    | string          | a keypress to trigger on the local machine                                                                 |
+| midi-cue-mapping.file        | string          | path to an mp3 or wav file to play                                                                         |
+| midi-cue-mapping.houselights | Array\[int\]    | list of house light numbers to affect                                                                      |
+| midi-cue-mapping.rgbw        | Array\[int\]    | list of 4 integers from 0-255 corresponding to an RGBW value to assign to house lights                     |
+| midi-cue-mapping.transitions | Array\[int\]    | transition length in seconds for LED house light bulbs to new RGBW values                                  |
+| midi-cue-mapping.effects     | Array\[string\] | effect present on the house lights provided, usually either "None" or "Light Board Control"                |
 
 ## Output msc message format
 
