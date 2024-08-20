@@ -38,8 +38,8 @@ type confCueMapping struct {
 	Keyboard     string   `yaml:"keyboard"`
 	AudioFile    string   `yaml:"file"`
 	HouseLight   []uint8  `yaml:"houselight"`
-	RGBW         []uint8  `yaml:"rgbw"`
-	Transitions  []uint8  `yaml:"transitions"`
+	RGBW         []int    `yaml:"rgbw"`
+	Transitions  []int    `yaml:"transitions"`
 	Effects      []string `yaml:"effects"`
 }
 
@@ -52,8 +52,8 @@ type cueMap struct {
 	keyboardKey int
 	audioFile   string
 	houseLight  []uint8
-	rgbw        []uint8
-	transitions []uint8
+	rgbw        []int
+	transitions []int
 	effects     []string
 }
 
@@ -64,8 +64,8 @@ type Response struct {
 
 // Struct for light control data
 type LightRequestData struct {
-	entity_id  string  `json:"entity_id"`
-	rgbw_color []uint8 `json:"effect"`
-	transition uint8   `json:"transition"`
-	effect     string  `json:"effect"`
+	Entity_id  string `json:"entity_id"`
+	Rgbw_color []int  `json:"rgbw_color"`
+	Transition int    `json:"transition"`
+	Effect     string `json:"effect"`
 }

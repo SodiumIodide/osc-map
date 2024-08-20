@@ -451,7 +451,7 @@ func (m *MSCMap) toggleLight(cue float64) {
 	effects := mc.effects
 	rgbw := mc.rgbw
 
-	if len(rgbw) != 0 || len(rgbw) != 4 {
+	if len(rgbw) != 0 && len(rgbw) != 4 {
 		log.Errorf("rgbw argument must be 4 in length or otherwise absent in cue[%v]", cue)
 		return
 	}
@@ -470,49 +470,186 @@ func (m *MSCMap) toggleLight(cue float64) {
 			}
 		}
 		for i := 0; i < len(lightIDs); i++ {
-			// Prepare the HTTP request
-			var effect string
-			if len(effects) == 1 {
-				effect = effects[0]
-			} else {
-				effect = effects[i]
-			}
-			var transition uint8
-			if len(transitions) == 1 {
-				transition = transitions[0]
-			} else {
-				transition = transitions[i]
-			}
-			url := "http://homeassistant.local:80/api/services/light/turn_on"
-			data := LightRequestData{
-				entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
-				rgbw_color: rgbw,
-				effect:     effect,
-				transition: transition,
-			}
-			jsonData, err := json.Marshal(&data)
-			if err != nil {
-				log.Errorf("unable to create json data: %v", err)
-			}
-			req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-			if err != nil {
-				log.Errorf("error creating request: %v", err)
-			}
+			go func(i int, lightIDs []uint8, transitions []int, effects []string, rgbw []int) {
 
-			fmt.Printf("%+v", req)
+				// Prepare the HTTP request
+				var effect string
+				if len(effects) == 1 {
+					effect = effects[0]
+				} else {
+					effect = effects[i]
+				}
+				var transition int
+				if len(transitions) == 1 {
+					transition = transitions[0]
+				} else {
+					transition = transitions[i]
+				}
+				url := "http://homeassistant.local:80/api/services/light/turn_on"
 
-			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("HAKEY")))
-			req.Header.Set("Content-Type", "application/json")
+				if effect == "None" {
+					data := LightRequestData{
+						Entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
+						Rgbw_color: []int{0, 0, 0, 0},
+						Effect:     effect,
+					}
 
-			// Make client
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			if err != nil {
-				log.Errorf("error sending request: %v", err)
-			}
+					jsonData, err := json.Marshal(&data)
+					if err != nil {
+						log.Errorf("unable to create json data: %v", err)
+					}
+					req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+					if err != nil {
+						log.Errorf("error creating request: %v", err)
+					}
 
-			defer resp.Body.Close()
-			fmt.Println("Response Status:", resp.Status)
+					fmt.Printf("%+v", req)
+
+					req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("HAKEY")))
+					req.Header.Set("Content-Type", "application/json")
+
+					// Make client
+					client := &http.Client{}
+					resp, err := client.Do(req)
+					if err != nil {
+						log.Errorf("error sending request: %v", err)
+					}
+
+					defer resp.Body.Close()
+					fmt.Println("Response Status:", resp.Status)
+
+					data = LightRequestData{
+						Entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
+						Rgbw_color: rgbw,
+						Transition: transition,
+						Effect:     effect,
+					}
+
+					jsonData, err = json.Marshal(&data)
+					if err != nil {
+						log.Errorf("unable to create json data: %v", err)
+					}
+					req, err = http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+					if err != nil {
+						log.Errorf("error creating request: %v", err)
+					}
+
+					fmt.Printf("%+v", req)
+
+					req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("HAKEY")))
+					req.Header.Set("Content-Type", "application/json")
+
+					// Make client
+					client = &http.Client{}
+					resp, err = client.Do(req)
+					if err != nil {
+						log.Errorf("error sending request: %v", err)
+					}
+
+					defer resp.Body.Close()
+					fmt.Println("Response Status:", resp.Status)
+				} else {
+					data := LightRequestData{
+						Entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
+						Rgbw_color: rgbw,
+						Transition: transition,
+						Effect:     effect,
+					}
+
+					jsonData, err := json.Marshal(&data)
+					if err != nil {
+						log.Errorf("unable to create json data: %v", err)
+					}
+					req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+					if err != nil {
+						log.Errorf("error creating request: %v", err)
+					}
+
+					fmt.Printf("%+v", req)
+
+					req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("HAKEY")))
+					req.Header.Set("Content-Type", "application/json")
+
+					// Make client
+					client := &http.Client{}
+					resp, err := client.Do(req)
+					if err != nil {
+						log.Errorf("error sending request: %v", err)
+					}
+
+					defer resp.Body.Close()
+					fmt.Println("Response Status:", resp.Status)
+
+					time.Sleep(time.Duration(transition) * time.Second)
+
+					data = LightRequestData{
+						Entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
+						Rgbw_color: rgbw,
+						Effect:     "None",
+					}
+
+					jsonData, err = json.Marshal(&data)
+					if err != nil {
+						log.Errorf("unable to create json data: %v", err)
+					}
+					req, err = http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+					if err != nil {
+						log.Errorf("error creating request: %v", err)
+					}
+
+					fmt.Printf("%+v", req)
+
+					req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("HAKEY")))
+					req.Header.Set("Content-Type", "application/json")
+
+					// Make client
+					client = &http.Client{}
+					resp, err = client.Do(req)
+					if err != nil {
+						log.Errorf("error sending request: %v", err)
+					}
+
+					defer resp.Body.Close()
+					fmt.Println("Response Status:", resp.Status)
+				}
+
+				data := LightRequestData{
+					Entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
+					Rgbw_color: []int{0, 0, 0, 0},
+					Effect:     effect,
+				}
+
+				data = LightRequestData{
+					Entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
+					Rgbw_color: rgbw,
+					Effect:     effect,
+					Transition: transition,
+				}
+
+				jsonData, err := json.Marshal(&data)
+				if err != nil {
+					log.Errorf("unable to create json data: %v", err)
+				}
+				req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+				if err != nil {
+					log.Errorf("error creating request: %v", err)
+				}
+
+				fmt.Printf("%+v", req)
+
+				req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("HAKEY")))
+				req.Header.Set("Content-Type", "application/json")
+
+				// Make client
+				client := &http.Client{}
+				resp, err := client.Do(req)
+				if err != nil {
+					log.Errorf("error sending request: %v", err)
+				}
+
+				defer resp.Body.Close()
+				fmt.Println("Response Status:", resp.Status)
+			}(i, lightIDs, transitions, effects, rgbw)
 		}
 	}
 }
@@ -607,6 +744,10 @@ func (m *MSCMap) readConfig() (*conf, error) {
 			faderVal:    cm.FaderValue,
 			keyboardKey: keyboard,
 			audioFile:   cm.AudioFile,
+			houseLight:  cm.HouseLight,
+			rgbw:        cm.RGBW,
+			transitions: cm.Transitions,
+			effects:     cm.Effects,
 		}
 		midiMap[cm.In] = newCM
 	}

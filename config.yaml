@@ -60,12 +60,14 @@ midi-cue-mapping:
     unmute: [16]
     houselight: [10]
     rgbw: [100, 100, 100, 100]
-    transitions: [3]
-    effect: ["None"]
+    transitions: [10]
+    effects: ["None"]
   - light: 26
     unmute: [12]
-    # PHONE SFX
-    file: "C:\\Users\\LALT\\Documents\\Shows\\Funhome_SFX\\phone-ring-short.mp3"
+    houselight: [10]
+    rgbw: [0, 0, 0, 0]
+    transitions: [10]
+    effects: ["Light Board Control"]
   - light: 27
     mute: [12]
     unmute: [10]
