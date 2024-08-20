@@ -247,6 +247,7 @@ func (m *MSCMap) sendMidiOut(cue float64) {
 		out, err := midi.SendTo(*m.midiOut)
 		if err != nil {
 			log.Errorf("failed to get midi send function: %v", err)
+			return
 		}
 
 		err = out(mm)
@@ -438,19 +439,6 @@ func (m *MSCMap) playAudioFile(cue float64) {
 	}
 }
 
-func (m *MSCMap) sceneSelect(cue float64) {
-	mc, ok := m.midiMap[cue]
-	if !ok {
-		log.Debugf("did not find cue mapping for cue[%v]", cue)
-		return
-	}
-
-	scene := mc.lightScene
-
-	// Define the URL to the light entity
-
-}
-
 func (m *MSCMap) toggleLight(cue float64) {
 	mc, ok := m.midiMap[cue]
 	if !ok {
@@ -458,67 +446,75 @@ func (m *MSCMap) toggleLight(cue float64) {
 		return
 	}
 
-	lightID := mc.houseLight
+	lightIDs := mc.houseLight
+	transitions := mc.transitions
+	effects := mc.effects
+	rgbw := mc.rgbw
 
-	// Define the URL to the light entity
-	url := fmt.Sprintf("%s:%s/api/states/%d", DefaultHomeAssistantHTTP, os.Getenv("HAPORT"), lightID)
-
-	// authtoken from the environment
-	authToken := os.Getenv("HAKEY")
-
-	// Define the new state to toggle to
-	newState := "on"
-
-	// Get current state
-	currentResponse, err := http.Get(url)
-	if err != nil {
-		log.Errorf("did not find homeassistant url: %s", url)
+	if len(rgbw) != 0 || len(rgbw) != 4 {
+		log.Errorf("rgbw argument must be 4 in length or otherwise absent in cue[%v]", cue)
 		return
 	}
 
-	defer currentResponse.Body.Close()
+	if len(lightIDs) != 0 {
+		if len(lightIDs) != len(transitions) {
+			if len(transitions) != 1 {
+				log.Errorf("unmatched transitions list length to number of lights in cue[%v]", cue)
+				return
+			}
+		}
+		if len(lightIDs) != len(effects) {
+			if len(effects) != 1 {
+				log.Errorf("unmatched effects list length to number of lights in cue[%v]", cue)
+				return
+			}
+		}
+		for i := 0; i < len(lightIDs); i++ {
+			// Prepare the HTTP request
+			var effect string
+			if len(effects) == 1 {
+				effect = effects[0]
+			} else {
+				effect = effects[i]
+			}
+			var transition uint8
+			if len(transitions) == 1 {
+				transition = transitions[0]
+			} else {
+				transition = transitions[i]
+			}
+			url := "http://homeassistant.local:80/api/services/light/turn_on"
+			data := LightRequestData{
+				entity_id:  fmt.Sprintf("light.house_light_%d", lightIDs[i]),
+				rgbw_color: rgbw,
+				effect:     effect,
+				transition: transition,
+			}
+			jsonData, err := json.Marshal(&data)
+			if err != nil {
+				log.Errorf("unable to create json data: %v", err)
+			}
+			req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+			if err != nil {
+				log.Errorf("error creating request: %v", err)
+			}
 
-	var currentState Response
-	if err := json.NewDecoder(currentResponse.Body).Decode(&currentState); err != nil {
-		log.Errorf("cannot decode json response: %v", err)
-		return
+			fmt.Printf("%+v", req)
+
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("HAKEY")))
+			req.Header.Set("Content-Type", "application/json")
+
+			// Make client
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Errorf("error sending request: %v", err)
+			}
+
+			defer resp.Body.Close()
+			fmt.Println("Response Status:", resp.Status)
+		}
 	}
-
-	// Toggle state
-	if currentState.State == "on" {
-		newState = "off"
-	}
-
-	// Define the payload
-	payload := map[string]string{"state": newState}
-
-	// Convert payload to JSON
-	jsonPayload, err := json.Marshal(payload)
-	if err != nil {
-		log.Errorf("cannot marshal a json payload %s: %v", payload, err)
-		return
-	}
-
-	// Create request
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
-	if err != nil {
-		log.Errorf("cannot create HTTP POST reques\n%s\n%v", jsonPayload, err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+authToken)
-
-	// Send request
-	client := &http.Client{}
-	response, err := client.Do(req)
-	if err != nil {
-		log.Errorf("cannot send request to client: %v", err)
-		return
-	}
-	defer response.Body.Close()
-
-	// Print response status
-	fmt.Println("Response Status:", response.Status)
 }
 
 // sendAll is only for testing what messages qlc+ can see

@@ -28,8 +28,6 @@ outputs:
 midi-cue-mapping:
   - light: 1
     housescene: "full"
-  - light: 2
-    houselight: 10
   # Opening
   - light: 3
     mute: [21, 22]
@@ -60,6 +58,10 @@ midi-cue-mapping:
   - light: 25
     mute: [10]
     unmute: [16]
+    houselight: [10]
+    rgbw: [100, 100, 100, 100]
+    transitions: [3]
+    effect: ["None"]
   - light: 26
     unmute: [12]
     # PHONE SFX

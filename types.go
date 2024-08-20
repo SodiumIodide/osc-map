@@ -29,16 +29,18 @@ type confOutputMIDIPC struct {
 }
 
 type confCueMapping struct {
-	In           float64 `yaml:"light"`
-	Sound        uint8   `yaml:"sound"`
-	Mute         []uint8 `yaml:"mute"`
-	Unmute       []uint8 `yaml:"unmute"`
-	FaderChannel []uint8 `yaml:"fader"`
-	FaderValue   []uint8 `yaml:"value"`
-	Keyboard     string  `yaml:"keyboard"`
-	AudioFile    string  `yaml:"file"`
-	HouseLight   uint8   `yaml:"houselight"`
-	LightScene   string  `yaml:"housescene"`
+	In           float64  `yaml:"light"`
+	Sound        uint8    `yaml:"sound"`
+	Mute         []uint8  `yaml:"mute"`
+	Unmute       []uint8  `yaml:"unmute"`
+	FaderChannel []uint8  `yaml:"fader"`
+	FaderValue   []uint8  `yaml:"value"`
+	Keyboard     string   `yaml:"keyboard"`
+	AudioFile    string   `yaml:"file"`
+	HouseLight   []uint8  `yaml:"houselight"`
+	RGBW         []uint8  `yaml:"rgbw"`
+	Transitions  []uint8  `yaml:"transitions"`
+	Effects      []string `yaml:"effects"`
 }
 
 type cueMap struct {
@@ -49,11 +51,21 @@ type cueMap struct {
 	faderVal    []uint8
 	keyboardKey int
 	audioFile   string
-	houseLight  uint8
-	lightScene  string
+	houseLight  []uint8
+	rgbw        []uint8
+	transitions []uint8
+	effects     []string
 }
 
 // Struct to represent the HomeAssistant API response
 type Response struct {
 	State string `json:"state"`
+}
+
+// Struct for light control data
+type LightRequestData struct {
+	entity_id  string  `json:"entity_id"`
+	rgbw_color []uint8 `json:"effect"`
+	transition uint8   `json:"transition"`
+	effect     string  `json:"effect"`
 }
