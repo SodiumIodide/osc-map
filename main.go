@@ -477,29 +477,29 @@ func sendRequestJSON(lightID int, rgbw []int, transition int, effect string) {
 // Define a function meant to be edited/rebuilt for timing and debug
 func customRainbow(lightID int, transition int, sleep int) {
 	for {
-		sendRequestJSON(lightID, []int{255, 0, 0}, transition, "None")
+		sendRequestJSON(lightID, []int{255, 0, 0, 0}, transition, "None")
 		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{255, 128, 0}, transition, "None")
+		sendRequestJSON(lightID, []int{255, 128, 0, 0}, transition, "None")
 		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{255, 255, 0}, transition, "None")
+		sendRequestJSON(lightID, []int{255, 255, 0, 0}, transition, "None")
 		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{128, 255, 0}, transition, "None")
+		sendRequestJSON(lightID, []int{128, 255, 0, 0}, transition, "None")
 		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{0, 255, 0}, transition, "None")
+		sendRequestJSON(lightID, []int{0, 255, 0, 0}, transition, "None")
 		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{0, 255, 128}, transition, "None")
+		sendRequestJSON(lightID, []int{0, 255, 128, 0}, transition, "None")
 		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{0, 255, 255}, transition, "None")
+		sendRequestJSON(lightID, []int{0, 255, 255, 0}, transition, "None")
 		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{0, 128, 255}, transition, "None")
+		sendRequestJSON(lightID, []int{0, 128, 255, 0}, transition, "None")
 		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{0, 0, 255}, transition, "None")
+		sendRequestJSON(lightID, []int{0, 0, 255, 0}, transition, "None")
 		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{128, 0, 255}, transition, "None")
+		sendRequestJSON(lightID, []int{128, 0, 255, 0}, transition, "None")
 		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{255, 0, 255}, transition, "None")
+		sendRequestJSON(lightID, []int{255, 0, 255, 0}, transition, "None")
 		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{255, 0, 128}, transition, "None")
+		sendRequestJSON(lightID, []int{255, 0, 128, 0}, transition, "None")
 		time.Sleep(time.Duration(sleep) * time.Second)
 	}
 }
@@ -597,7 +597,7 @@ func (m *MSCMap) toggleLight(cue float64) {
 
 					// INFO: Edit these arguments to alter custom rainbow - requires recompiling
 					// lightID, transition, sleep
-					customRainbow(lightIDs[i], 1, 3)
+					customRainbow(lightIDs[i], transition, 3)
 				} else {
 					sendRequestJSON(lightIDs[i],
 						[]int{0, 0, 0, 0},
