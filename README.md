@@ -86,7 +86,7 @@ The option given here is a file path as a string, meaning in quotation marks. Yo
 
 `"C:\\Users\\LALT\\Documents\\Shows\\ThePlayThatGoesWrong_SFX\\door-chime.mp3"`
 
-### `houselights` - \[Integer\] & `rgbw` \[Integer\] & `effects` \[String\]
+### `houselights` - \[Integer\] & `rgbws` \[\[Integer\],...\] & `effects` \[String\]
 
 The `houselights` option will take a list of integers corresponding to house light numbers. The house lights are numbered according to the following schema:
 
@@ -96,24 +96,22 @@ The `houselights` option will take a list of integers corresponding to house lig
 | Joist | Joist | Joist | Joist |
 | 5     | 6     | 7     | 8     |
 | 9     | 10    | 11    | 12    |
-| 13    | 14    | 15    | 16    |
-| 17    | 18    | 19    | 20    |
-| Booth | Back  | Back  | Back  |
+| Booth | 13    | 14    | 15    |
 
-Any numbers greater than 20 will not be functional. Along with the `houselights` list, you can include a 4 digit RGBW value in the form of an integer list from 0-255 for each value to assign a color profile for the specified LED bulbs. As such, this list can range from `[0, 0, 0, 0]` for no light effect to `[255, 255, 255, 255]` for a full light effect. There are theories and sciences behind mixing RGBW values which are outside the scope of this README, so experimentation is encouraged.
+Any numbers greater than 20 will not be functional. Along with the `houselights` list, you can include a 4 digit RGBW value in the form of an integer list from 0-255 for each value to assign a color profile for the specified LED bulbs via the `rgbws` option. As such, this list can range from `[0, 0, 0, 0]` for no light effect to `[255, 255, 255, 255]` for a full light effect. There are theories and sciences behind mixing RGBW values which are outside the scope of this README, so experimentation is encouraged.
 
 The `transitions` list requires integer inputs that correspond to the number of seconds that it takes for the light transition to occur. Note that LED light bulbs can have unexpected color variations due to differences in firmware programming when applying transition length effects. If precise color control is extremely important, it may be best to stick to transition times of 0. If smoothness of lighting effects is desired, then experimentation may be required with RGBW values and transition times to limit any unwanted color variations from the scene.
 
-The final list useful for unitary control of the house lights is the `effects` list, which is a list of strings. Generally, the strings used should be `"None"` or `"Light Board Control"`. To allow for unitary control of the house lights, the effect `"None"` must be used such that the DMX signals emitted from the lightboard do not override the selected `rgbw` values. To relinquish unitary control via this program and allow for lightboard signals to effect the full universe of house lights again, please pass in the `"Light Board Control"` effect with a cue.
+The final list useful for unitary control of the house lights is the `effects` list, which is a list of strings. Generally, the strings used should be `"None"` or `"Light Board Control"`. To allow for unitary control of the house lights, the effect `"None"` must be used such that the DMX signals emitted from the lightboard do not override the selected `rgbws` values. To relinquish unitary control via this program and allow for lightboard signals to effect the full universe of house lights again, please pass in the `"Light Board Control"` effect with a cue.
 
-Other effects are possible but likely of limited utility during shows, such as `"Strobe"`, `"Fast Rainbow"`, `"Slow Rainbow"`, and others. These may be viewed in the ESPHome YAML files within the HomeAssistant server configuration.
+Other effects are possible but likely of limited utility during shows, such as `"Strobe"`, `"Fast Rainbow"`, `"Slow Rainbow"`, and others. These may be viewed in the ESPHome YAML files within the HomeAssistant server configuration. Experienced developers may also find a `customRainbow()` function in the `main.go` file, which will require re-compilation to alter.
 
-If all lights in the list given by the `houselights` definition receive the same effect, it is possible to omit repeating the effect and transition lists and just include one value. e.g.:
+If all lights in the list given by the `houselights` definition receive the same effect, it is possible to omit repeating the rgbw, effect, and transition lists and just include one value. e.g.:
 
 ```yaml
 - light: 25
   houselights: [10, 11, 12]
-  rgbw: [255, 70, 0, 255]
+  rgbws: [[255, 70, 0, 255]]
   transitions: [0]
   effects: ["None"]
 ```
@@ -123,12 +121,22 @@ The above snippet will remove lightboard control and allocate the designated RGB
 ```yaml
 - light: 26
   houselights: [10, 11, 12]
-  rgbw: [0, 0, 0, 0]
+  rgbws: [[0, 0, 0, 0]]
   transitions: [3]
   effects: ["Light Board Control"]
 ```
 
 If multiple controls and transition times are desired for multiple different lights, they will correspond to the positions in the list provided by the `houselight` variable. Mixing and matching transitions and effects is possible.
+
+A quick snippet for using multiple lights also follows for edification, wherein we will bring the front of house lights to full so as to demonstrate the use of longer lists:
+
+```yaml
+- light: 1
+  houselights: [1, 2, 3, 4]
+  rgbws: [[255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255], [255, 255, 255, 255]]
+  transitions: [3, 2, 2, 3]
+  effects: ["None", "None", "None", "None"]
+```
 
 ## Example
 
