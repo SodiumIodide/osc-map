@@ -36,7 +36,7 @@ type confCueMapping struct {
 	FaderValue   []uint8  `yaml:"value"`
 	Keyboard     string   `yaml:"keyboard"`
 	AudioFile    string   `yaml:"file"`
-	HouseLights  []uint8  `yaml:"houselights"`
+	HouseLights  []int    `yaml:"houselights"`
 	RGBWs        [][]int  `yaml:"rgbws"`
 	Transitions  []int    `yaml:"transitions"`
 	Effects      []string `yaml:"effects"`
@@ -50,7 +50,7 @@ type cueMap struct {
 	faderVal    []uint8
 	keyboardKey int
 	audioFile   string
-	houseLights []uint8
+	houseLights []int
 	rgbws       [][]int
 	transitions []int
 	effects     []string
