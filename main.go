@@ -447,7 +447,7 @@ func (m *MSCMap) toggleLight(cue float64) {
 		return
 	}
 
-	lightIDs := mc.houseLight
+	lightIDs := mc.houseLights
 	transitions := mc.transitions
 	effects := mc.effects
 	rgbw := mc.rgbw
