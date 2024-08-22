@@ -582,6 +582,15 @@ func (m *MSCMap) toggleLight(cue float64) {
 						rgbw,
 						0,
 						"Light Board Control")
+				} else if effect == "Custom Rainbow" {
+					sendRequestJSON(lightIDs[i],
+						[]int{0, 0, 0, 0},
+						0,
+						"None")
+
+					// INFO: Edit these arguments to alter custom rainbow - requires recompiling
+					// lightID, transition, sleep
+					customRainbow(lightIDs[i], 1, 3)
 				} else {
 					sendRequestJSON(lightIDs[i],
 						[]int{0, 0, 0, 0},
