@@ -488,65 +488,54 @@ func customRainbow(lightID int, transition int, sleep int, stopChannel <-chan st
 	for {
 		select {
 		case <-stopChannel:
-			log.Debugf("RECEIVED SIGNAL")
 			return
 		default:
-			if state == 0 {
+			switch state {
+			case 0:
 				sendRequestJSON(lightID, []int{255, 0, 0, 0}, transition, "None")
 				time.Sleep(time.Duration(sleep) * time.Second)
 				state++
-			}
-			if state == 1 {
+			case 1:
 				sendRequestJSON(lightID, []int{255, 128, 0, 0}, transition, "None")
 				time.Sleep(time.Duration(sleep) * time.Second)
 				state++
-			}
-			if state == 2 {
+			case 2:
 				sendRequestJSON(lightID, []int{255, 255, 0, 0}, transition, "None")
 				time.Sleep(time.Duration(sleep) * time.Second)
 				state++
-			}
-			if state == 3 {
+			case 3:
 				sendRequestJSON(lightID, []int{128, 255, 0, 0}, transition, "None")
 				time.Sleep(time.Duration(sleep) * time.Second)
 				state++
-			}
-			if state == 4 {
+			case 4:
 				sendRequestJSON(lightID, []int{0, 255, 0, 0}, transition, "None")
 				time.Sleep(time.Duration(sleep) * time.Second)
 				state++
-			}
-			if state == 5 {
+			case 5:
 				sendRequestJSON(lightID, []int{0, 255, 128, 0}, transition, "None")
 				time.Sleep(time.Duration(sleep) * time.Second)
 				state++
-			}
-			if state == 6 {
+			case 6:
 				sendRequestJSON(lightID, []int{0, 255, 255, 0}, transition, "None")
 				time.Sleep(time.Duration(sleep) * time.Second)
 				state++
-			}
-			if state == 7 {
+			case 7:
 				sendRequestJSON(lightID, []int{0, 128, 255, 0}, transition, "None")
 				time.Sleep(time.Duration(sleep) * time.Second)
 				state++
-			}
-			if state == 8 {
+			case 8:
 				sendRequestJSON(lightID, []int{0, 0, 255, 0}, transition, "None")
 				time.Sleep(time.Duration(sleep) * time.Second)
 				state++
-			}
-			if state == 9 {
+			case 9:
 				sendRequestJSON(lightID, []int{128, 0, 255, 0}, transition, "None")
 				time.Sleep(time.Duration(sleep) * time.Second)
 				state++
-			}
-			if state == 10 {
+			case 10:
 				sendRequestJSON(lightID, []int{255, 0, 255, 0}, transition, "None")
 				time.Sleep(time.Duration(sleep) * time.Second)
 				state++
-			}
-			if state == 11 {
+			case 11:
 				sendRequestJSON(lightID, []int{255, 0, 128, 0}, transition, "None")
 				time.Sleep(time.Duration(sleep) * time.Second)
 				state = 0
@@ -621,7 +610,8 @@ func (m *MSCMap) toggleLight(cue float64) {
 			sendRequest := func(lightID int, transition int, effect string, rgbw []int) {
 				// Check effect type - important to set for transition times to or away from light board control
 				if effect == "None" {
-					stopChannels[lightID] <- struct{}{} // Send a signal to stop the loop
+					close(stopChannels[lightID])
+					stopChannels[lightID] = make(chan struct{})
 
 					sendRequestJSON(lightID,
 						[]int{0, 0, 0, 0},
@@ -633,9 +623,8 @@ func (m *MSCMap) toggleLight(cue float64) {
 						transition,
 						"None")
 				} else if effect == "Light Board Control" {
-					log.Debugf("HERE HERE HERE HERE EMITTING SIGNAL")
-					stopChannels[lightID] <- struct{}{} // Send a signal to stop the loop
-					log.Debugf("STOP SIGNAL SENT")
+					close(stopChannels[lightID])
+					stopChannels[lightID] = make(chan struct{})
 
 					sendRequestJSON(lightID,
 						rgbw,
@@ -658,7 +647,8 @@ func (m *MSCMap) toggleLight(cue float64) {
 					// lightID, transition, sleep
 					go customRainbow(lightID, transition, 3, stopChannels[lightID])
 				} else {
-					stopChannels[lightID] <- struct{}{} // Send a signal to stop the loop
+					close(stopChannels[lightID])
+					stopChannels[lightID] = make(chan struct{})
 
 					sendRequestJSON(lightID,
 						[]int{0, 0, 0, 0},
