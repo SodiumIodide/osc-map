@@ -559,6 +559,13 @@ func (m *MSCMap) toggleLight(cue float64) {
 					rgbw = rgbws[i]
 				}
 
+				// Error check RGBW
+				for color := 0; color < 4; color++ {
+					if color < 0 || color > 255 {
+						log.Errorf("Invalid RGBW: %v", color)
+					}
+				}
+
 				// Check effect type - important to set for transition times to or away from light board control
 				if effect == "None" {
 					sendRequestJSON(lightIDs[i],
