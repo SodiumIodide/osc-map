@@ -76,7 +76,7 @@ midi-cue-mapping:
     unmute: [11, 12]
     houselights: [9]
     rgbws: [[0, 0, 0, 0]]
-    transitions: [3]
+    transitions: [1]
     effects: ["Custom Rainbow"]
   - light: 31
     unmute: [5, 7, 9]
@@ -88,6 +88,10 @@ midi-cue-mapping:
   - light: 34
     mute: [7, 9]
     unmute: [10]
+    houselights: [9]
+    rgbws: [[0, 0, 0, 0]]
+    transitions: [1]
+    effects: ["Light Board Control"]
   # D
   - light: 35
     mute: [5, 12]

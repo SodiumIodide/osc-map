@@ -38,6 +38,7 @@ const (
 	DefaultResampleQuality   = 4    // good balance of quality and playback time
 	DefaultHomeAssistantHTTP = "http://homeassistant.local"
 	DefaultHomeAssistantPort = 80
+	numHouseLights           = 15
 )
 
 type MSCMap struct {
@@ -48,6 +49,9 @@ type MSCMap struct {
 	midiMap        map[float64]cueMap
 	keyBonding     *keybd_event.KeyBonding
 }
+
+// There are 15 house lights and each needs a stop channel for the custom rainbow
+var stopChannels = make([]chan struct{}, numHouseLights)
 
 func main() {
 
@@ -120,6 +124,10 @@ func main() {
 
 	if quit {
 		return
+	}
+
+	for i := 0; i < numHouseLights; i++ {
+		stopChannels[i] = make(chan struct{})
 	}
 
 	// listen for midi sysex commands from etc
@@ -475,32 +483,75 @@ func sendRequestJSON(lightID int, rgbw []int, transition int, effect string) {
 }
 
 // Define a function meant to be edited/rebuilt for timing and debug
-func customRainbow(lightID int, transition int, sleep int) {
+func customRainbow(lightID int, transition int, sleep int, stopChannel <-chan struct{}) {
+	state := 0
 	for {
-		sendRequestJSON(lightID, []int{255, 0, 0, 0}, transition, "None")
-		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{255, 128, 0, 0}, transition, "None")
-		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{255, 255, 0, 0}, transition, "None")
-		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{128, 255, 0, 0}, transition, "None")
-		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{0, 255, 0, 0}, transition, "None")
-		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{0, 255, 128, 0}, transition, "None")
-		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{0, 255, 255, 0}, transition, "None")
-		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{0, 128, 255, 0}, transition, "None")
-		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{0, 0, 255, 0}, transition, "None")
-		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{128, 0, 255, 0}, transition, "None")
-		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{255, 0, 255, 0}, transition, "None")
-		time.Sleep(time.Duration(sleep) * time.Second)
-		sendRequestJSON(lightID, []int{255, 0, 128, 0}, transition, "None")
-		time.Sleep(time.Duration(sleep) * time.Second)
+		select {
+		case <-stopChannel:
+			log.Debugf("RECEIVED SIGNAL")
+			return
+		default:
+			if state == 0 {
+				sendRequestJSON(lightID, []int{255, 0, 0, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			}
+			if state == 1 {
+				sendRequestJSON(lightID, []int{255, 128, 0, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			}
+			if state == 2 {
+				sendRequestJSON(lightID, []int{255, 255, 0, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			}
+			if state == 3 {
+				sendRequestJSON(lightID, []int{128, 255, 0, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			}
+			if state == 4 {
+				sendRequestJSON(lightID, []int{0, 255, 0, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			}
+			if state == 5 {
+				sendRequestJSON(lightID, []int{0, 255, 128, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			}
+			if state == 6 {
+				sendRequestJSON(lightID, []int{0, 255, 255, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			}
+			if state == 7 {
+				sendRequestJSON(lightID, []int{0, 128, 255, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			}
+			if state == 8 {
+				sendRequestJSON(lightID, []int{0, 0, 255, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			}
+			if state == 9 {
+				sendRequestJSON(lightID, []int{128, 0, 255, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			}
+			if state == 10 {
+				sendRequestJSON(lightID, []int{255, 0, 255, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			}
+			if state == 11 {
+				sendRequestJSON(lightID, []int{255, 0, 128, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state = 0
+			}
+		}
 	}
 }
 
@@ -537,79 +588,91 @@ func (m *MSCMap) toggleLight(cue float64) {
 		}
 
 		for i := 0; i < len(lightIDs); i++ {
-			go func(i int, lightIDs []int, transitions []int, effects []string, rgbws [][]int) {
+			log.Debugf("Sending light cue to house light %v", lightIDs[i])
 
-				// Prepare the HTTP request
-				var effect string
-				if len(effects) == 1 {
-					effect = effects[0]
-				} else {
-					effect = effects[i]
-				}
-				var transition int
-				if len(transitions) == 1 {
-					transition = transitions[0]
-				} else {
-					transition = transitions[i]
-				}
-				var rgbw []int
-				if len(rgbws) == 1 {
-					rgbw = rgbws[0]
-				} else {
-					rgbw = rgbws[i]
-				}
+			// Prepare the HTTP request
+			var effect string
+			if len(effects) == 1 {
+				effect = effects[0]
+			} else {
+				effect = effects[i]
+			}
+			var transition int
+			if len(transitions) == 1 {
+				transition = transitions[0]
+			} else {
+				transition = transitions[i]
+			}
+			var rgbw []int
+			if len(rgbws) == 1 {
+				rgbw = rgbws[0]
+			} else {
+				rgbw = rgbws[i]
+			}
 
-				// Error check RGBW
-				for color := 0; color < 4; color++ {
-					if color < 0 || color > 255 {
-						log.Errorf("Invalid RGBW: %v", color)
-					}
+			// Error check RGBW
+			for color := 0; color < 4; color++ {
+				if color < 0 || color > 255 {
+					log.Errorf("Invalid RGBW: %v", color)
 				}
+			}
 
+			lightID := lightIDs[i]
+			sendRequest := func(lightID int, transition int, effect string, rgbw []int) {
 				// Check effect type - important to set for transition times to or away from light board control
 				if effect == "None" {
-					sendRequestJSON(lightIDs[i],
+					stopChannels[lightID] <- struct{}{} // Send a signal to stop the loop
+
+					sendRequestJSON(lightID,
 						[]int{0, 0, 0, 0},
 						0,
 						"None")
 
-					sendRequestJSON(lightIDs[i],
+					sendRequestJSON(lightID,
 						rgbw,
 						transition,
 						"None")
 				} else if effect == "Light Board Control" {
-					sendRequestJSON(lightIDs[i],
+					log.Debugf("HERE HERE HERE HERE EMITTING SIGNAL")
+					stopChannels[lightID] <- struct{}{} // Send a signal to stop the loop
+					log.Debugf("STOP SIGNAL SENT")
+
+					sendRequestJSON(lightID,
 						rgbw,
 						transition,
 						"None")
 
 					time.Sleep(time.Duration(transition) * time.Second)
 
-					sendRequestJSON(lightIDs[i],
+					sendRequestJSON(lightID,
 						rgbw,
 						0,
 						"Light Board Control")
 				} else if effect == "Custom Rainbow" {
-					sendRequestJSON(lightIDs[i],
+					sendRequestJSON(lightID,
 						[]int{0, 0, 0, 0},
 						0,
 						"None")
 
 					// INFO: Edit these arguments to alter custom rainbow - requires recompiling
 					// lightID, transition, sleep
-					customRainbow(lightIDs[i], transition, 3)
+					go customRainbow(lightID, transition, 3, stopChannels[lightID])
 				} else {
-					sendRequestJSON(lightIDs[i],
+					stopChannels[lightID] <- struct{}{} // Send a signal to stop the loop
+
+					sendRequestJSON(lightID,
 						[]int{0, 0, 0, 0},
 						0,
 						"None")
 
-					sendRequestJSON(lightIDs[i],
+					sendRequestJSON(lightID,
 						rgbw,
 						transition,
 						effect)
 				}
-			}(i, lightIDs, transitions, effects, rgbws)
+			}
+
+			go sendRequest(lightID, transition, effect, rgbw)
 		}
 	}
 }
