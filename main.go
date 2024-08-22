@@ -450,12 +450,7 @@ func (m *MSCMap) toggleLight(cue float64) {
 	lightIDs := mc.houseLights
 	transitions := mc.transitions
 	effects := mc.effects
-	rgbw := mc.rgbw
-
-	if len(rgbw) != 0 && len(rgbw) != 4 {
-		log.Errorf("rgbw argument must be 4 in length or otherwise absent in cue[%v]", cue)
-		return
-	}
+	rgbws := mc.rgbws
 
 	if len(lightIDs) != 0 {
 		// Check length errors
@@ -471,12 +466,17 @@ func (m *MSCMap) toggleLight(cue float64) {
 				return
 			}
 		}
+		if len(lightIDs) != len(rgbws) {
+			if len(rgbws) != 1 {
+				log.Errorf("unmatched RGBWs list length to number of lights in cue[%v]", cue)
+			}
+		}
 
 		// Make client
 		client := &http.Client{}
 
 		for i := 0; i < len(lightIDs); i++ {
-			go func(i int, lightIDs []uint8, transitions []int, effects []string, rgbw []int) {
+			go func(i int, lightIDs []uint8, transitions []int, effects []string, rgbws [][]int) {
 
 				// Prepare the HTTP request
 				var effect string
@@ -490,6 +490,12 @@ func (m *MSCMap) toggleLight(cue float64) {
 					transition = transitions[0]
 				} else {
 					transition = transitions[i]
+				}
+				var rgbw []int
+				if len(rgbws) == 1 {
+					rgbw = rgbws[0]
+				} else {
+					rgbw = rgbws[i]
 				}
 				url := fmt.Sprintf("%s:%d/api/services/light/turn_on", DefaultHomeAssistantHTTP, DefaultHomeAssistantPort)
 
@@ -617,7 +623,7 @@ func (m *MSCMap) toggleLight(cue float64) {
 					defer resp.Body.Close()
 					fmt.Println("Response Status:", resp.Status)
 				}
-			}(i, lightIDs, transitions, effects, rgbw)
+			}(i, lightIDs, transitions, effects, rgbws)
 		}
 	}
 }
@@ -713,7 +719,7 @@ func (m *MSCMap) readConfig() (*conf, error) {
 			keyboardKey: keyboard,
 			audioFile:   cm.AudioFile,
 			houseLights: cm.HouseLights,
-			rgbw:        cm.RGBW,
+			rgbws:       cm.RGBWs,
 			transitions: cm.Transitions,
 			effects:     cm.Effects,
 		}
