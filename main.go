@@ -474,6 +474,36 @@ func sendRequestJSON(lightID int, rgbw []int, transition int, effect string) {
 	fmt.Println("Response Status:", resp.Status)
 }
 
+// Define a function meant to be edited/rebuilt for timing and debug
+func customRainbow(lightID int, transition int, sleep int) {
+	for {
+		sendRequestJSON(lightID, []int{255, 0, 0}, transition, "None")
+		time.Sleep(time.Duration(sleep) * time.Second)
+		sendRequestJSON(lightID, []int{255, 128, 0}, transition, "None")
+		time.Sleep(time.Duration(sleep) * time.Second)
+		sendRequestJSON(lightID, []int{255, 255, 0}, transition, "None")
+		time.Sleep(time.Duration(sleep) * time.Second)
+		sendRequestJSON(lightID, []int{128, 255, 0}, transition, "None")
+		time.Sleep(time.Duration(sleep) * time.Second)
+		sendRequestJSON(lightID, []int{0, 255, 0}, transition, "None")
+		time.Sleep(time.Duration(sleep) * time.Second)
+		sendRequestJSON(lightID, []int{0, 255, 128}, transition, "None")
+		time.Sleep(time.Duration(sleep) * time.Second)
+		sendRequestJSON(lightID, []int{0, 255, 255}, transition, "None")
+		time.Sleep(time.Duration(sleep) * time.Second)
+		sendRequestJSON(lightID, []int{0, 128, 255}, transition, "None")
+		time.Sleep(time.Duration(sleep) * time.Second)
+		sendRequestJSON(lightID, []int{0, 0, 255}, transition, "None")
+		time.Sleep(time.Duration(sleep) * time.Second)
+		sendRequestJSON(lightID, []int{128, 0, 255}, transition, "None")
+		time.Sleep(time.Duration(sleep) * time.Second)
+		sendRequestJSON(lightID, []int{255, 0, 255}, transition, "None")
+		time.Sleep(time.Duration(sleep) * time.Second)
+		sendRequestJSON(lightID, []int{255, 0, 128}, transition, "None")
+		time.Sleep(time.Duration(sleep) * time.Second)
+	}
+}
+
 func (m *MSCMap) toggleLight(cue float64) {
 	mc, ok := m.midiMap[cue]
 	if !ok {
@@ -540,7 +570,7 @@ func (m *MSCMap) toggleLight(cue float64) {
 						rgbw,
 						transition,
 						"None")
-				} else {
+				} else if effect == "Light Board Control" {
 					sendRequestJSON(lightIDs[i],
 						rgbw,
 						transition,
@@ -552,6 +582,16 @@ func (m *MSCMap) toggleLight(cue float64) {
 						rgbw,
 						0,
 						"Light Board Control")
+				} else {
+					sendRequestJSON(lightIDs[i],
+						[]int{0, 0, 0, 0},
+						0,
+						"None")
+
+					sendRequestJSON(lightIDs[i],
+						rgbw,
+						transition,
+						effect)
 				}
 			}(i, lightIDs, transitions, effects, rgbws)
 		}
