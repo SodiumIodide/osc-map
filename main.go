@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"math/rand/v2"
 	"net/http"
 	"os"
 	"os/signal"
@@ -448,7 +449,7 @@ func (m *MSCMap) playAudioFile(cue float64) {
 	}
 }
 
-func sendRequestJSON(lightID int, rgbw []int, transition int, effect string) {
+func sendRequestJSON(lightID int, rgbw []int, transition float32, effect string) {
 	url := fmt.Sprintf("%s:%d/api/services/light/turn_on", DefaultHomeAssistantHTTP, DefaultHomeAssistantPort)
 
 	data := LightRequestData{
@@ -483,8 +484,8 @@ func sendRequestJSON(lightID int, rgbw []int, transition int, effect string) {
 }
 
 // Define a function meant to be edited/rebuilt for timing and debug
-func customRainbow(lightID int, transition int, sleep int, stopChannel <-chan struct{}) {
-	state := 0
+func customRainbow(lightID int, transition float32, sleep float32, stopChannel <-chan struct{}) {
+	state := rand.IntN(11)
 	for {
 		select {
 		case <-stopChannel:
@@ -586,7 +587,7 @@ func (m *MSCMap) toggleLight(cue float64) {
 			} else {
 				effect = effects[i]
 			}
-			var transition int
+			var transition float32
 			if len(transitions) == 1 {
 				transition = transitions[0]
 			} else {
@@ -607,11 +608,11 @@ func (m *MSCMap) toggleLight(cue float64) {
 			}
 
 			lightID := lightIDs[i]
-			sendRequest := func(lightID int, transition int, effect string, rgbw []int) {
+			sendRequest := func(lightID int, transition float32, effect string, rgbw []int) {
 				// Check effect type - important to set for transition times to or away from light board control
 				if effect == "None" {
-					close(stopChannels[lightID])
-					stopChannels[lightID] = make(chan struct{})
+					close(stopChannels[lightID-1])
+					stopChannels[lightID-1] = make(chan struct{})
 
 					sendRequestJSON(lightID,
 						[]int{0, 0, 0, 0},
@@ -623,8 +624,8 @@ func (m *MSCMap) toggleLight(cue float64) {
 						transition,
 						"None")
 				} else if effect == "Light Board Control" {
-					close(stopChannels[lightID])
-					stopChannels[lightID] = make(chan struct{})
+					close(stopChannels[lightID-1])
+					stopChannels[lightID-1] = make(chan struct{})
 
 					sendRequestJSON(lightID,
 						rgbw,
@@ -645,10 +646,10 @@ func (m *MSCMap) toggleLight(cue float64) {
 
 					// INFO: Edit these arguments to alter custom rainbow - requires recompiling
 					// lightID, transition, sleep
-					go customRainbow(lightID, transition, 3, stopChannels[lightID])
+					go customRainbow(lightID, transition, transition+0.1, stopChannels[lightID-1])
 				} else {
-					close(stopChannels[lightID])
-					stopChannels[lightID] = make(chan struct{})
+					close(stopChannels[lightID-1])
+					stopChannels[lightID-1] = make(chan struct{})
 
 					sendRequestJSON(lightID,
 						[]int{0, 0, 0, 0},
