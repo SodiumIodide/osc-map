@@ -28,18 +28,18 @@ type confOutputMIDIPC struct {
 }
 
 type confCueMapping struct {
-	In           float64  `yaml:"light"`
-	Sound        uint8    `yaml:"sound"`
-	Mute         []uint8  `yaml:"mute"`
-	Unmute       []uint8  `yaml:"unmute"`
-	FaderChannel []uint8  `yaml:"fader"`
-	FaderValue   []uint8  `yaml:"value"`
-	Keyboard     string   `yaml:"keyboard"`
-	AudioFile    string   `yaml:"file"`
-	HouseLights  []int    `yaml:"houselights"`
-	RGBWs        [][]int  `yaml:"rgbws"`
-	Transitions  []int    `yaml:"transitions"`
-	Effects      []string `yaml:"effects"`
+	In           float64   `yaml:"light"`
+	Sound        uint8     `yaml:"sound"`
+	Mute         []uint8   `yaml:"mute"`
+	Unmute       []uint8   `yaml:"unmute"`
+	FaderChannel []uint8   `yaml:"fader"`
+	FaderValue   []uint8   `yaml:"value"`
+	Keyboard     string    `yaml:"keyboard"`
+	AudioFile    string    `yaml:"file"`
+	HouseLights  []int     `yaml:"houselights"`
+	RGBWs        [][]int   `yaml:"rgbws"`
+	Transitions  []float32 `yaml:"transitions"`
+	Effects      []string  `yaml:"effects"`
 }
 
 type cueMap struct {
@@ -52,7 +52,7 @@ type cueMap struct {
 	audioFile   string
 	houseLights []int
 	rgbws       [][]int
-	transitions []int
+	transitions []float32
 	effects     []string
 }
 
@@ -63,8 +63,8 @@ type Response struct {
 
 // Struct for light control data
 type LightRequestData struct {
-	Entity_id  string `json:"entity_id"`
-	Rgbw_color []int  `json:"rgbw_color"`
-	Transition int    `json:"transition"`
-	Effect     string `json:"effect"`
+	Entity_id  string  `json:"entity_id"`
+	Rgbw_color []int   `json:"rgbw_color"`
+	Transition float32 `json:"transition"`
+	Effect     string  `json:"effect"`
 }
