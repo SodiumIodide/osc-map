@@ -480,17 +480,17 @@ func sendRequestJSON(lightID int, rgbw []int, transition float32, effect string)
 	}
 
 	defer resp.Body.Close()
-	fmt.Println("Response Status:", resp.Status)
+	//fmt.Println("Response Status:", resp.Status)
 }
 
 // Define a function meant to be edited/rebuilt for timing and debug
 func customRainbow(lightID int, transition float32, sleep float32, stopChannel <-chan struct{}) {
-	state := rand.IntN(11)
 	for {
 		select {
 		case <-stopChannel:
 			return
 		default:
+			state := rand.IntN(11)
 			switch state {
 			case 0:
 				sendRequestJSON(lightID, []int{255, 0, 0, 0}, transition, "None")
@@ -646,7 +646,7 @@ func (m *MSCMap) toggleLight(cue float64) {
 
 					// INFO: Edit these arguments to alter custom rainbow - requires recompiling
 					// lightID, transition, sleep
-					go customRainbow(lightID, transition, transition+0.1, stopChannels[lightID-1])
+					go customRainbow(lightID, transition-0.1, transition+0.1, stopChannels[lightID-1])
 				} else {
 					close(stopChannels[lightID-1])
 					stopChannels[lightID-1] = make(chan struct{})
