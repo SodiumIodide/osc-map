@@ -45,7 +45,7 @@ Following the above header, a new YAML list may be constructed titled `midi-cue-
 - `keyboard`
 - `file`
 - `houselights`
-  - `rgbw`
+  - `rgbws`
   - `transitions`
   - `effects`
 
@@ -86,7 +86,7 @@ The option given here is a file path as a string, meaning in quotation marks. Yo
 
 `"C:\\Users\\LALT\\Documents\\Shows\\ThePlayThatGoesWrong_SFX\\door-chime.mp3"`
 
-### `houselights` - \[Integer\] & `rgbws` \[\[Integer\],...\] & `effects` \[String\]
+### `houselights` - \[Integer\] & `rgbws` \[\[Integer\],...\] & `transitions` \[Float\] & `effects` \[String\]
 
 The `houselights` option will take a list of integers corresponding to house light numbers. The house lights are numbered according to the following schema:
 
@@ -213,8 +213,8 @@ Comments on the cues are not necessary but can help to delineate the file and un
 | midi-cue-mapping.keyboard    | string          | a keypress to trigger on the local machine                                                                 |
 | midi-cue-mapping.file        | string          | path to an mp3 or wav file to play                                                                         |
 | midi-cue-mapping.houselights | Array\[int\]    | list of house light numbers to affect                                                                      |
-| midi-cue-mapping.rgbw        | Array\[int\]    | list of 4 integers from 0-255 corresponding to an RGBW value to assign to house lights                     |
-| midi-cue-mapping.transitions | Array\[int\]    | transition length in seconds for LED house light bulbs to new RGBW values                                  |
+| midi-cue-mapping.rgbws       | Array\[Array\[int\]\] | list of 4 integers from 0-255 corresponding to an RGBW value to assign to house lights                     |
+| midi-cue-mapping.transitions | Array\[float\]    | transition length in seconds for LED house light bulbs to new RGBW values                                  |
 | midi-cue-mapping.effects     | Array\[string\] | effect present on the house lights provided, usually either "None" or "Light Board Control"                |
 
 ## Output msc message format
