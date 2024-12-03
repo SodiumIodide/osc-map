@@ -1,0 +1,25 @@
+midiIn: "USB MIDI Interface"
+
+outputs:
+  osc:
+    ip: 127.0.0.1
+    port: 8765
+  midi-pc:
+    name: UM-ONE
+    channel: 1
+  qlab: false 
+  keyboard-commands: true
+  audio-files: true
+
+midi-cue-mapping:
+  - light: 1
+    unmute: [4, 5]
+    fader: [1, 2]
+    value: [100, 100]
+    file: "C:\\Users\\LALT\\Documents\\Shows\\ThePlayThatGoesWrong_SFX\\door-chime.mp3"
+  - light: 2
+    mute: [4, 5]
+    fader: [1,2]
+    value: [0, 0]
+  - light: 5
+    file: "C:\\Users\\LALT\\Documents\\Shows\\ThePlayThatGoesWrong_SFX\\clock-single.mp3"

@@ -1,0 +1,4 @@
+PS C:\Users\LALT> curl -H "Authorization: Bearer $Env:HAKEY" -H "Content-Type: application/json" -d '{"entity_id": "light.house_light_10", "rgbw_color": [70, 0, 0, 0], "effect": "None"}' http://homeassistant.local:80/api/services/light/turn_on
+[]
+PS C:\Users\LALT> curl -H "Authorization: Bearer $Env:HAKEY" -H "Content-Type: application/json" -d '{"entity_id": "light.house_light_10", "effect": "Light Board Control"}' http://homeassistant.local:80/api/services/light/turn_on
+[]

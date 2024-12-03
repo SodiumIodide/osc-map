@@ -1,17 +1,28 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/big"
+	"math/rand/v2"
+	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"runtime"
 	"strconv"
+	"time"
 
+	"github.com/faiface/beep"
+	"github.com/faiface/beep/mp3"
+	"github.com/faiface/beep/speaker"
+	"github.com/faiface/beep/wav"
 	"github.com/fsnotify/fsnotify"
 	"github.com/hypebeast/go-osc/osc"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/micmonay/keybd_event"
 	"gitlab.com/gomidi/midi/v2"
 	"gitlab.com/gomidi/midi/v2/drivers"
 	_ "gitlab.com/gomidi/midi/v2/drivers/rtmididrv" // autoregisters driver
@@ -20,9 +31,15 @@ import (
 )
 
 const (
-	DefaultMidiIn     = "Keyboard"
-	DefaultOSCOutIP   = "127.0.0.1"
-	DefaultOSCOutPort = 8765
+	DefaultMidiIn            = "Keyboard"
+	DefaultOSCOutIP          = "127.0.0.1"
+	DefaultOSCOutPort        = 8765
+	DefaultSampleRate        = 48000
+	DefaultBufferSize        = 4800 // buffer size of 1/10 second
+	DefaultResampleQuality   = 4    // good balance of quality and playback time
+	DefaultHomeAssistantHTTP = "http://homeassistant.local"
+	DefaultHomeAssistantPort = 80
+	numHouseLights           = 15
 )
 
 type MSCMap struct {
@@ -30,10 +47,16 @@ type MSCMap struct {
 	midiOut        *drivers.Out
 	qlabOut        *drivers.Out
 	midiOutChannel uint8
-	midiMap        map[float64]uint8
+	midiMap        map[float64]cueMap
+	keyBonding     *keybd_event.KeyBonding
 }
 
+// There are 15 house lights and each needs a stop channel for the custom rainbow
+var stopChannels = make([]chan struct{}, numHouseLights)
+
 func main() {
+
+	time.Sleep(5 * time.Second)
 	defer midi.CloseDriver()
 
 	log.SetLevel(log.DebugLevel)
@@ -55,7 +78,7 @@ func main() {
 	in, err := midi.FindInPort(conf.MidiIn)
 	if err != nil {
 		log.Errorf("can't find midi input %v", conf.MidiIn)
-		log.Infof("possible midi inputs: %+v", midi.GetInPorts())
+		log.Errorf("found options [%+v]", midi.GetInPorts())
 		quit = true
 	}
 
@@ -79,8 +102,33 @@ func main() {
 		}
 	}
 
+	if conf.Outputs.KeyboardCommands {
+		kb, err := keybd_event.NewKeyBonding()
+		if err != nil {
+			log.Errorf("failed to create key bonding: %v", err)
+			quit = true
+		} else {
+
+			// For linux, it is very important to wait 2 seconds
+			if runtime.GOOS == "linux" {
+				log.Info("Please wait 2 seconds for keyboard binding...")
+				time.Sleep(2 * time.Second)
+			}
+
+			mscMap.keyBonding = &kb
+		}
+	}
+
+	if conf.Outputs.AudioFiles {
+		speaker.Init(DefaultSampleRate, DefaultBufferSize)
+	}
+
 	if quit {
 		return
+	}
+
+	for i := 0; i < numHouseLights; i++ {
+		stopChannels[i] = make(chan struct{})
 	}
 
 	// listen for midi sysex commands from etc
@@ -120,7 +168,12 @@ func (m *MSCMap) midiListenFunc(msg midi.Message, timestampms int32) {
 				tc = fmt.Sprintf("%.0f", cue)
 			}
 
-			m.sendMidiPC(cue)
+			m.sendMidiOut(cue)
+			if m.keyBonding != nil {
+				m.sendKeyboardCommand(cue)
+			}
+			go m.playAudioFile(cue)
+			go m.toggleLight(cue)
 			m.sendOSC(command, tc)
 		}
 	case msg.GetNoteStart(&ch, &key, &vel):
@@ -160,7 +213,7 @@ func parseMSC(bt []byte) (command string, cue float64, err error) {
 		return command, cue, nil
 	}
 
-	return "", 0, fmt.Errorf("not an msc packet. len: %v bt[0]: %x\n", len(bt), bt[0])
+	return "", 0, fmt.Errorf("not an msc packet. len: %v bt[0]: %x", len(bt), bt[0])
 }
 
 // sendOSC sends a message out as an osc message with address /msc/<command>/<cue number>
@@ -177,32 +230,109 @@ func (m *MSCMap) sendOSC(command, cue string) {
 	}
 }
 
-// sendMidiPC sends a program change message to the midi out that configured in the config
-func (m *MSCMap) sendMidiPC(cue float64) {
+// sendMidiPC sends a MIDI message to the midi out that configured in the config
+func (m *MSCMap) sendMidiOut(cue float64) {
 	if m.midiOut == nil {
 		return
 	}
 
-	soundCue, ok := m.midiMap[cue]
+	mc, ok := m.midiMap[cue]
 	if !ok {
 		log.Debugf("did not find cue mapping for cue[%v]", cue)
 		return
 	}
 
-	mm := midi.ProgramChange(m.midiOutChannel, soundCue-1)
+	soundCue := mc.soundCue
+	muteCue := mc.muteCue
+	unmuteCue := mc.unmuteCue
+	faderCue := mc.faderCue
+	faderVal := mc.faderVal
 
-	out, err := midi.SendTo(*m.midiOut)
-	if err != nil {
-		log.Errorf("failed to get midi send function: %v", err)
-	}
-
-	err = out(mm)
-	if err != nil {
-		log.Errorf("failed to send midi program change message to [%v]: %v", m.midiOut, err)
+	if soundCue == 0 && len(muteCue) == 0 && len(unmuteCue) == 0 && len(faderCue) == 0 {
 		return
 	}
 
-	log.Infof("sent program change %v to midi out", soundCue)
+	if soundCue != 0 {
+		mm := midi.ProgramChange(m.midiOutChannel, soundCue-1)
+		out, err := midi.SendTo(*m.midiOut)
+		if err != nil {
+			log.Errorf("failed to get midi send function: %v", err)
+			return
+		}
+
+		err = out(mm)
+		if err != nil {
+			log.Errorf("failed to send midi program change message to [%v]: %v", m.midiOut, err)
+			return
+		}
+
+		log.Infof("sent program change %v to midi out", soundCue)
+	}
+
+	if len(muteCue) != 0 {
+		for i := 0; i < len(muteCue); i++ {
+			mm := midi.NoteOn(m.midiOutChannel, muteCue[i]-1, 0x7F)
+
+			out, err := midi.SendTo(*m.midiOut)
+			if err != nil {
+				log.Errorf("failed to get midi send function: %v", err)
+			}
+
+			err = out(mm)
+			if err != nil {
+				log.Errorf("failed to send midi note message to [%v]: %v", m.midiOut, err)
+				return
+			}
+		}
+
+		log.Infof("sent mute note %v to midi out", muteCue)
+	}
+
+	if len(unmuteCue) != 0 {
+		for i := 0; i < len(unmuteCue); i++ {
+			mm := midi.NoteOn(m.midiOutChannel, unmuteCue[i]-1, 0x00)
+
+			out, err := midi.SendTo(*m.midiOut)
+			if err != nil {
+				log.Errorf("failed to get midi send function: %v", err)
+			}
+
+			err = out(mm)
+			if err != nil {
+				log.Errorf("failed to send midi note message to [%v]: %v", m.midiOut, err)
+				return
+			}
+		}
+
+		log.Infof("sent unmute note %v to midi out", unmuteCue)
+	}
+
+	// Fader value can vary from 0 to 127, where 100 = U
+	if len(faderCue) != 0 {
+		if len(faderCue) != len(faderVal) {
+			log.Errorf("each fader cue needs a fader value")
+		}
+		for i := 0; i < len(faderCue); i++ {
+			if faderVal[i] > 127 {
+				log.Errorf("fader value cannot be higher than 127")
+			}
+
+			mm := midi.ControlChange(m.midiOutChannel, faderCue[i]-1, faderVal[i])
+
+			out, err := midi.SendTo(*m.midiOut)
+			if err != nil {
+				log.Errorf("failed to get midi send function: %v", err)
+			}
+
+			err = out(mm)
+			if err != nil {
+				log.Errorf("failed to send midi control change to [%v]: %v", m.midiOut, err)
+				return
+			}
+		}
+
+		log.Infof("sent fader value %v, %v control change to midi out", faderCue, faderVal)
+	}
 
 	if m.qlabOut != nil {
 		mm := midi.ProgramChange(m.midiOutChannel, soundCue)
@@ -219,6 +349,322 @@ func (m *MSCMap) sendMidiPC(cue float64) {
 		}
 
 		log.Infof("sent program change %v to qlab", soundCue)
+	}
+}
+
+// sendKeyboardCommand simulates a keyboard keypress. Useful for soundboard programs
+func (m *MSCMap) sendKeyboardCommand(cue float64) {
+	if m.keyBonding == nil {
+		log.Errorf("keybonding is nil")
+		return
+	}
+
+	cueMap, ok := m.midiMap[cue]
+	if !ok {
+		log.Debugf("did not find cue mapping for cue[%v]", cue)
+		return
+	}
+
+	if cueMap.keyboardKey == -1 {
+		log.Debugf("no keyboard key specified for cue[%v]", cue)
+		return
+	}
+
+	m.keyBonding.SetKeys(cueMap.keyboardKey)
+
+	log.Debugf("sending keyboard: %v", cueMap.keyboardKey)
+
+	// Press the selected keys
+	err := m.keyBonding.Launching()
+	if err != nil {
+		log.Errorf("failed to launch key: %X", cueMap.keyboardKey)
+	}
+
+}
+
+// play a simple audio file with no fading or level change
+func (m *MSCMap) playAudioFile(cue float64) {
+	mc, ok := m.midiMap[cue]
+	if !ok {
+		log.Debugf("did not find cue mapping for cue[%v]", cue)
+		return
+	}
+
+	filename := mc.audioFile
+
+	if filename == "" {
+		log.Debugf("did not find audio file for cue[%v]", cue)
+		return
+	}
+
+	fileExtension := filepath.Ext(filename)
+
+	if fileExtension != ".mp3" && fileExtension != ".wav" {
+		log.Errorf("incompatible file extension: %s", filename)
+		return
+	}
+
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Errorf("cannot open file %s: %v", filename, err)
+		return
+	}
+
+	if fileExtension == ".mp3" {
+		streamer, format, err := mp3.Decode(file)
+		if err != nil {
+			log.Errorf("cannot decode file %s: %v", filename, err)
+			return
+		}
+		defer streamer.Close()
+
+		// buffer size of 1/10 of a second
+		resampled := beep.Resample(DefaultResampleQuality, DefaultSampleRate, format.SampleRate, streamer)
+
+		done := make(chan bool)
+		speaker.Play(beep.Seq(resampled, beep.Callback(func() {
+			done <- true
+		})))
+
+		<-done
+	}
+
+	if fileExtension == ".wav" {
+		streamer, format, err := wav.Decode(file)
+		if err != nil {
+			log.Errorf("cannot decode file %s: %v", filename, err)
+			return
+		}
+		defer streamer.Close()
+
+		// buffer size of 1/10 of a second
+		resampled := beep.Resample(DefaultResampleQuality, DefaultSampleRate, format.SampleRate, streamer)
+
+		done := make(chan bool)
+		speaker.Play(beep.Seq(resampled, beep.Callback(func() {
+			done <- true
+		})))
+
+		<-done
+	}
+}
+
+func sendRequestJSON(lightID int, rgbw []int, transition float32, effect string) {
+	url := fmt.Sprintf("%s:%d/api/services/light/turn_on", DefaultHomeAssistantHTTP, DefaultHomeAssistantPort)
+
+	data := LightRequestData{
+		Entity_id:  fmt.Sprintf("light.house_light_%d", lightID),
+		Rgbw_color: rgbw,
+		Transition: transition,
+		Effect:     effect,
+	}
+
+	// Make client
+	client := &http.Client{}
+
+	jsonData, err := json.Marshal(&data)
+	if err != nil {
+		log.Errorf("unable to create json data: %v", err)
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Errorf("error creating request: %v", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("HAKEY")))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Errorf("error sending request: %v", err)
+	}
+
+	defer resp.Body.Close()
+	//fmt.Println("Response Status:", resp.Status)
+}
+
+// Define a function meant to be edited/rebuilt for timing and debug
+func customRainbow(lightID int, transition float32, sleep float32, stopChannel <-chan struct{}) {
+	for {
+		select {
+		case <-stopChannel:
+			return
+		default:
+			state := rand.IntN(11)
+			switch state {
+			case 0:
+				sendRequestJSON(lightID, []int{255, 0, 0, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			case 1:
+				sendRequestJSON(lightID, []int{255, 128, 0, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			case 2:
+				sendRequestJSON(lightID, []int{255, 255, 0, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			case 3:
+				sendRequestJSON(lightID, []int{128, 255, 0, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			case 4:
+				sendRequestJSON(lightID, []int{0, 255, 0, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			case 5:
+				sendRequestJSON(lightID, []int{0, 255, 128, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			case 6:
+				sendRequestJSON(lightID, []int{0, 255, 255, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			case 7:
+				sendRequestJSON(lightID, []int{0, 128, 255, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			case 8:
+				sendRequestJSON(lightID, []int{0, 0, 255, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			case 9:
+				sendRequestJSON(lightID, []int{128, 0, 255, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			case 10:
+				sendRequestJSON(lightID, []int{255, 0, 255, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state++
+			case 11:
+				sendRequestJSON(lightID, []int{255, 0, 128, 0}, transition, "None")
+				time.Sleep(time.Duration(sleep) * time.Second)
+				state = 0
+			}
+		}
+	}
+}
+
+func (m *MSCMap) toggleLight(cue float64) {
+	mc, ok := m.midiMap[cue]
+	if !ok {
+		log.Debugf("did not find cue mapping for cue[%v]", cue)
+		return
+	}
+
+	lightIDs := mc.houseLights
+	transitions := mc.transitions
+	effects := mc.effects
+	rgbws := mc.rgbws
+
+	if len(lightIDs) != 0 {
+		// Check length errors
+		if len(lightIDs) != len(transitions) {
+			if len(transitions) != 1 {
+				log.Errorf("unmatched transitions list length to number of lights in cue[%v]", cue)
+				return
+			}
+		}
+		if len(lightIDs) != len(effects) {
+			if len(effects) != 1 {
+				log.Errorf("unmatched effects list length to number of lights in cue[%v]", cue)
+				return
+			}
+		}
+		if len(lightIDs) != len(rgbws) {
+			if len(rgbws) != 1 {
+				log.Errorf("unmatched RGBWs list length to number of lights in cue[%v]", cue)
+			}
+		}
+
+		for i := 0; i < len(lightIDs); i++ {
+			log.Debugf("Sending light cue to house light %v", lightIDs[i])
+
+			// Prepare the HTTP request
+			var effect string
+			if len(effects) == 1 {
+				effect = effects[0]
+			} else {
+				effect = effects[i]
+			}
+			var transition float32
+			if len(transitions) == 1 {
+				transition = transitions[0]
+			} else {
+				transition = transitions[i]
+			}
+			var rgbw []int
+			if len(rgbws) == 1 {
+				rgbw = rgbws[0]
+			} else {
+				rgbw = rgbws[i]
+			}
+
+			// Error check RGBW
+			for color := 0; color < 4; color++ {
+				if color < 0 || color > 255 {
+					log.Errorf("Invalid RGBW: %v", color)
+				}
+			}
+
+			lightID := lightIDs[i]
+			sendRequest := func(lightID int, transition float32, effect string, rgbw []int) {
+				// Check effect type - important to set for transition times to or away from light board control
+				if effect == "None" {
+					close(stopChannels[lightID-1])
+					stopChannels[lightID-1] = make(chan struct{})
+
+					sendRequestJSON(lightID,
+						[]int{0, 0, 0, 0},
+						0,
+						"None")
+
+					sendRequestJSON(lightID,
+						rgbw,
+						transition,
+						"None")
+				} else if effect == "Light Board Control" {
+					close(stopChannels[lightID-1])
+					stopChannels[lightID-1] = make(chan struct{})
+
+					sendRequestJSON(lightID,
+						rgbw,
+						transition,
+						"None")
+
+					time.Sleep(time.Duration(transition) * time.Second)
+
+					sendRequestJSON(lightID,
+						rgbw,
+						0,
+						"Light Board Control")
+				} else if effect == "Custom Rainbow" {
+					sendRequestJSON(lightID,
+						[]int{0, 0, 0, 0},
+						0,
+						"None")
+
+					// INFO: Edit these arguments to alter custom rainbow - requires recompiling
+					// lightID, transition, sleep
+					go customRainbow(lightID, transition-0.1, transition+0.1, stopChannels[lightID-1])
+				} else {
+					close(stopChannels[lightID-1])
+					stopChannels[lightID-1] = make(chan struct{})
+
+					sendRequestJSON(lightID,
+						[]int{0, 0, 0, 0},
+						0,
+						"None")
+
+					sendRequestJSON(lightID,
+						rgbw,
+						transition,
+						effect)
+				}
+			}
+
+			go sendRequest(lightID, transition, effect, rgbw)
+		}
 	}
 }
 
@@ -280,7 +726,7 @@ func (m *MSCMap) monitorConfig() {
 }
 
 func (m *MSCMap) readConfig() (*conf, error) {
-	confBytes, err := ioutil.ReadFile("config.yaml")
+	confBytes, err := os.ReadFile("config.yaml")
 	if err != nil {
 		log.Fatalf("failed to read config file: %v", err)
 	}
@@ -295,9 +741,29 @@ func (m *MSCMap) readConfig() (*conf, error) {
 	log.Debugf("config: %+v", conf)
 
 	// create midi map
-	midiMap := make(map[float64]uint8)
+	midiMap := make(map[float64]cueMap)
 	for _, cm := range conf.MidiCueMapping {
-		midiMap[cm.In] = cm.Out
+
+		// parse hex from config to int
+		keyboard, ok := KeyboardMap[cm.Keyboard]
+		if !ok {
+			keyboard = -1
+		}
+
+		newCM := cueMap{
+			soundCue:    cm.Sound,
+			muteCue:     cm.Mute,
+			unmuteCue:   cm.Unmute,
+			faderCue:    cm.FaderChannel,
+			faderVal:    cm.FaderValue,
+			keyboardKey: keyboard,
+			audioFile:   cm.AudioFile,
+			houseLights: cm.HouseLights,
+			rgbws:       cm.RGBWs,
+			transitions: cm.Transitions,
+			effects:     cm.Effects,
+		}
+		midiMap[cm.In] = newCM
 	}
 
 	m.midiMap = midiMap
