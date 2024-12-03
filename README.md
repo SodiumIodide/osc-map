@@ -49,7 +49,7 @@ Following the above header, a new YAML list may be constructed titled `midi-cue-
   - `transitions`
   - `effects`
 
-#### NOTE
+***NOTE***
 It is very important to keep a consistent spacing and hypen delineation in this file. If a `failure to unmarshal config file` error is shown when executing from a command prompt like PowerShell, users should double-check the indentation of all entries in the file.
 
 ### `sound` - Integer
@@ -222,7 +222,7 @@ Comments on the cues are not necessary but can help to delineate the file and un
 `address = /msc/<command>/<cue number>`
 `message = <cue number> true <command>`
 
-## Example packets:
+## Example packets
 
 midi input: `F0 7F 01 02 01 01 32 36 35 00 31 00 F7`  (go cue 265 A/B fader)
 
