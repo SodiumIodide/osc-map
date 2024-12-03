@@ -1,4 +1,4 @@
-module github.com/SodiumIodide/msc-map
+module github.com/SodiumIodide/osc-map
 
 go 1.20
 

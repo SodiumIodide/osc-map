@@ -1,4 +1,4 @@
-# msc-map
+# OSC-Map
 
 Receives MSC (MIDI Show Control) messages from an etc express (sysex messages), sends it out as an osc message, and sends out a midi program change message. Tested on Windows. This project has been forked to support the Los Alamos Little Theater in receiving MSC signal from the lightboard and sending a MIDI signal to the soundboard for cue sync and mapping.
 
@@ -12,11 +12,11 @@ Execute `go build` in the local working directory.
 
 ## Config
 
-msc-map will look for `config.yaml` in the local directory.
+OSC-Map will look for `config.yaml` in the local directory.
 
 ## File construction
 
-For LALT use with current equipment (e.g. tt24 soundboard and etc express lightboard), the config file should start with this header:
+For LALT use with current equipment (e.g. tt24 soundboard and ETC Express or Colorsource AV lightboard), the config file should start with this header:
 
 ```yaml
 midiIn: "USB MIDI Interface"
