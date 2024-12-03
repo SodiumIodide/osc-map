@@ -15,7 +15,7 @@ import (
 func (m *MSCMap) playAudioFile(cue float64) {
 	mc, ok := m.midiMap[cue]
 	if !ok {
-		log.Debugf("did not find cue mapping for cue[%v]", cue)
+		log.Debugf("no audio file for cue[%v]", cue)
 		return
 	}
 

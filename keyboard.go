@@ -11,7 +11,7 @@ func (m *MSCMap) sendKeyboardCommand(cue float64) {
 
 	cueMap, ok := m.midiMap[cue]
 	if !ok {
-		log.Debugf("did not find cue mapping for cue[%v]", cue)
+		log.Debugf("no virtual keyboard command for cue[%v]", cue)
 		return
 	}
 

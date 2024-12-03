@@ -225,7 +225,7 @@ func (m *MSCMap) sendMidiOut(cue float64) {
 
 	mc, ok := m.midiMap[cue]
 	if !ok {
-		log.Debugf("did not find cue mapping for cue[%v]", cue)
+		log.Debugf("no soundboard interface command for cue[%v]", cue)
 		return
 	}
 

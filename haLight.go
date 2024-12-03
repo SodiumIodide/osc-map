@@ -111,7 +111,7 @@ func customRainbow(lightID int, transition float32, sleep float32, stopChannel <
 func (m *MSCMap) toggleLight(cue float64) {
 	mc, ok := m.midiMap[cue]
 	if !ok {
-		log.Debugf("did not find cue mapping for cue[%v]", cue)
+		log.Debugf("no house light interface command for cue[%v]", cue)
 		return
 	}
 
