@@ -13,19 +13,19 @@ func (m *OSCMap) sendKeyboardCommand(cueNumber string, cueInteger string) {
 	if !ok {
 		cueMap, ok = m.controlMap[cueInteger]
 		if !ok {
-			log.Debugf("no virtual keyboard command for cue[%v]", cueNumber)
+			log.Debugf("No virtual keyboard command for cue[%v]", cueNumber)
 			return
 		}
 	}
 
 	if cueMap.keyboardKey == -1 {
-		log.Debugf("no keyboard key specified for cue[%v]", cueNumber)
+		log.Infof("No keyboard key specified for cue[%v]", cueNumber)
 		return
 	}
 
 	m.keyBonding.SetKeys(cueMap.keyboardKey)
 
-	log.Debugf("sending keyboard: %v", cueMap.keyboardKey)
+	log.Debugf("Sending keyboard: %v", cueMap.keyboardKey)
 
 	// Press the selected keys
 	err := m.keyBonding.Launching()

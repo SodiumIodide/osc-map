@@ -27,11 +27,11 @@ func sendRequestJSON(lightID int, rgbw []int, transition float32, effect string)
 
 	jsonData, err := json.Marshal(&data)
 	if err != nil {
-		log.Errorf("unable to create json data: %v", err)
+		log.Errorf("Unable to create json data: %v", err)
 	}
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Errorf("error creating request: %v", err)
+		log.Errorf("Error creating request: %v", err)
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("HAKEY")))
@@ -39,7 +39,7 @@ func sendRequestJSON(lightID int, rgbw []int, transition float32, effect string)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Errorf("error sending request: %v", err)
+		log.Errorf("Error sending request: %v", err)
 	}
 
 	defer resp.Body.Close()
@@ -113,7 +113,7 @@ func (m *OSCMap) toggleLight(cueNumber string, cueInteger string) {
 	if !ok {
 		mc, ok = m.controlMap[cueInteger]
 		if !ok {
-			log.Debugf("no house light interface command for cue[%v]", cueNumber)
+			log.Debugf("No house light interface command for cue[%v]", cueNumber)
 			return
 		}
 	}
@@ -127,19 +127,19 @@ func (m *OSCMap) toggleLight(cueNumber string, cueInteger string) {
 		// Check length errors
 		if len(lightIDs) != len(transitions) {
 			if len(transitions) != 1 {
-				log.Errorf("unmatched transitions list length to number of lights in cue[%v]", cueNumber)
+				log.Errorf("Unmatched transitions list length to number of lights in cue[%v]", cueNumber)
 				return
 			}
 		}
 		if len(lightIDs) != len(effects) {
 			if len(effects) != 1 {
-				log.Errorf("unmatched effects list length to number of lights in cue[%v]", cueNumber)
+				log.Errorf("Unmatched effects list length to number of lights in cue[%v]", cueNumber)
 				return
 			}
 		}
 		if len(lightIDs) != len(rgbws) {
 			if len(rgbws) != 1 {
-				log.Errorf("unmatched RGBWs list length to number of lights in cue[%v]", cueNumber)
+				log.Errorf("Unmatched RGBWs list length to number of lights in cue[%v]", cueNumber)
 			}
 		}
 

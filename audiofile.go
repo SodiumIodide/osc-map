@@ -17,7 +17,7 @@ func (m *OSCMap) playAudioFile(cueNumber string, cueInteger string) {
 	if !ok {
 		mc, ok = m.controlMap[cueInteger]
 		if !ok {
-			log.Debugf("no audio file for cue[%v]", cueNumber)
+			log.Debugf("No audio file for cue[%v]", cueNumber)
 			return
 		}
 	}
@@ -25,27 +25,27 @@ func (m *OSCMap) playAudioFile(cueNumber string, cueInteger string) {
 	filename := mc.audioFile
 
 	if filename == "" {
-		log.Debugf("did not find audio file for cue[%v]", cueNumber)
+		log.Debugf("Did not find audio file for cue[%v]", cueNumber)
 		return
 	}
 
 	fileExtension := filepath.Ext(filename)
 
 	if fileExtension != ".mp3" && fileExtension != ".wav" {
-		log.Errorf("incompatible file extension: %s", filename)
+		log.Errorf("Incompatible file extension: %s", filename)
 		return
 	}
 
 	file, err := os.Open(filename)
 	if err != nil {
-		log.Errorf("cannot open file %s: %v", filename, err)
+		log.Errorf("Cannot open file %s: %v", filename, err)
 		return
 	}
 
 	if fileExtension == ".mp3" {
 		streamer, format, err := mp3.Decode(file)
 		if err != nil {
-			log.Errorf("cannot decode file %s: %v", filename, err)
+			log.Errorf("Cannot decode file %s: %v", filename, err)
 			return
 		}
 		defer streamer.Close()
@@ -64,7 +64,7 @@ func (m *OSCMap) playAudioFile(cueNumber string, cueInteger string) {
 	if fileExtension == ".wav" {
 		streamer, format, err := wav.Decode(file)
 		if err != nil {
-			log.Errorf("cannot decode file %s: %v", filename, err)
+			log.Errorf("Cannot decode file %s: %v", filename, err)
 			return
 		}
 		defer streamer.Close()

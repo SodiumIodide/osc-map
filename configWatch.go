@@ -28,15 +28,15 @@ func (m *OSCMap) monitorConfig() {
 				}
 				_, err := m.readConfig()
 				if err != nil {
-					log.Errorf("failed to read config: %v", err)
+					log.Errorf("Failed to read config: %v", err)
 				}
 
-				log.Infof("config file changed: %s %s", event.Name, event.Op)
+				log.Infof("Config file changed: %s %s", event.Name, event.Op)
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return
 				}
-				log.Println("error:", err)
+				log.Println("Error in watcher:", err)
 			}
 		}
 
@@ -52,17 +52,17 @@ func (m *OSCMap) monitorConfig() {
 func (m *OSCMap) readConfig() (*conf, error) {
 	confBytes, err := os.ReadFile("config.yaml")
 	if err != nil {
-		log.Fatalf("failed to read config file: %v", err)
+		log.Fatalf("Failed to read config file: %v", err)
 	}
 
 	conf := &conf{}
 	err = yaml.Unmarshal(confBytes, conf)
 	if err != nil {
-		log.Fatalf("failed to unmarshal config file: %v", err)
+		log.Fatalf("Failed to unmarshal config file: %v", err)
 	}
 
 	// print config and exit
-	log.Debugf("config: %+v", conf)
+	log.Debugf("Config: %+v", conf)
 
 	// create midi map
 	controlMap := make(map[string]cueMap)
