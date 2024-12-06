@@ -3,21 +3,21 @@ package main
 import "net"
 
 type conf struct {
-	MidiIn string `yaml:"midiIn"`
+	OSCIn confOSC `yaml:"oscIn"`
 
-	Outputs        confOutputs      `yaml:"outputs"`
-	MidiCueMapping []confCueMapping `yaml:"midi-cue-mapping"`
+	Outputs           confOutputs      `yaml:"outputs"`
+	ControlCueMapping []confCueMapping `yaml:"control-cue-mapping"`
 }
 
 type confOutputs struct {
-	OSC              confOutputOSC    `yaml:"osc"`
+	OSCOut           confOSC          `yaml:"oscOut"`
 	MIDIPC           confOutputMIDIPC `yaml:"midi-pc"`
 	Qlab             bool             `yaml:"qlab"`
 	KeyboardCommands bool             `yaml:"keyboard-commands"`
 	AudioFiles       bool             `yaml:"audio-files"`
 }
 
-type confOutputOSC struct {
+type confOSC struct {
 	IP   net.IP `yaml:"ip"`
 	Port int    `yaml:"port"`
 }
@@ -28,7 +28,7 @@ type confOutputMIDIPC struct {
 }
 
 type confCueMapping struct {
-	In           float64   `yaml:"light"`
+	In           string    `yaml:"light"`
 	Sound        uint8     `yaml:"sound"`
 	Mute         []uint8   `yaml:"mute"`
 	Unmute       []uint8   `yaml:"unmute"`

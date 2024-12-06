@@ -108,11 +108,14 @@ func customRainbow(lightID int, transition float32, sleep float32, stopChannel <
 	}
 }
 
-func (m *MSCMap) toggleLight(cue float64) {
-	mc, ok := m.midiMap[cue]
+func (m *OSCMap) toggleLight(cueNumber string, cueInteger string) {
+	mc, ok := m.controlMap[cueNumber]
 	if !ok {
-		log.Debugf("no house light interface command for cue[%v]", cue)
-		return
+		mc, ok = m.controlMap[cueInteger]
+		if !ok {
+			log.Debugf("no house light interface command for cue[%v]", cueNumber)
+			return
+		}
 	}
 
 	lightIDs := mc.houseLights
@@ -124,19 +127,19 @@ func (m *MSCMap) toggleLight(cue float64) {
 		// Check length errors
 		if len(lightIDs) != len(transitions) {
 			if len(transitions) != 1 {
-				log.Errorf("unmatched transitions list length to number of lights in cue[%v]", cue)
+				log.Errorf("unmatched transitions list length to number of lights in cue[%v]", cueNumber)
 				return
 			}
 		}
 		if len(lightIDs) != len(effects) {
 			if len(effects) != 1 {
-				log.Errorf("unmatched effects list length to number of lights in cue[%v]", cue)
+				log.Errorf("unmatched effects list length to number of lights in cue[%v]", cueNumber)
 				return
 			}
 		}
 		if len(lightIDs) != len(rgbws) {
 			if len(rgbws) != 1 {
-				log.Errorf("unmatched RGBWs list length to number of lights in cue[%v]", cue)
+				log.Errorf("unmatched RGBWs list length to number of lights in cue[%v]", cueNumber)
 			}
 		}
 

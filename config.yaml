@@ -1,9 +1,11 @@
-midiIn: "USB MIDI Interface"
+oscIn:
+  ip: 10.1.10.203
+  port: 8006
 
 outputs:
-  osc:
-    ip: 127.0.0.1
-    port: 8765
+  oscOut:
+    ip: 10.1.10.77
+    port: 8005
   midi-pc:
     name: UM-ONE
     channel: 1
@@ -13,7 +15,14 @@ outputs:
 
 # Love, Loss, and What I Wore Projector Cues + Song Cue
 
-midi-cue-mapping:
+control-cue-mapping:
+  - light: 1
+    unmute: [1]
+  - light: 2
+    mute: [1]
+  - light: 5.1
+    fader: [6]
+    value: [50]
   - light: 6
     keyboard: "L"
   - light: 15

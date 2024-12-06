@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/faiface/beep/speaker"
@@ -20,8 +20,10 @@ import (
 
 const (
 	DefaultMidiIn            = "Keyboard"
-	DefaultOSCOutIP          = "127.0.0.1"
-	DefaultOSCOutPort        = 8765
+	DefaultOSCInIP           = "10.1.10.203"
+	DefaultOSCInPort         = 8006
+	DefaultOSCOutIP          = "10.1.10.77"
+	DefaultOSCListenPort     = 8005
 	DefaultSampleRate        = 48000
 	DefaultBufferSize        = 4800 // buffer size of 1/10 second
 	DefaultResampleQuality   = 4    // good balance of quality and playback time
@@ -30,12 +32,14 @@ const (
 	numHouseLights           = 15
 )
 
-type MSCMap struct {
-	oscClient      *osc.Client
+type OSCMap struct {
+	oscDispatcher  *osc.StandardDispatcher
+	oscInServer    *osc.Server
+	oscOutClient   *osc.Client
 	midiOut        *drivers.Out
 	qlabOut        *drivers.Out
 	midiOutChannel uint8
-	midiMap        map[float64]cueMap
+	controlMap     map[string]cueMap
 	keyBonding     *keybd_event.KeyBonding
 }
 
@@ -48,26 +52,26 @@ func main() {
 
 	log.SetLevel(log.DebugLevel)
 
-	mscMap := &MSCMap{}
-	conf, err := mscMap.readConfig()
+	oscMap := &OSCMap{}
+	conf, err := oscMap.readConfig()
 	if err != nil {
 		log.Fatalf("failed to read config file: %v", err)
 	}
-	go mscMap.monitorConfig()
+	go oscMap.monitorConfig()
 
-	log.Debugf("final midi mapping: %v", mscMap.midiMap)
-
-	// setup osc client
-	mscMap.oscClient = osc.NewClient(conf.Outputs.OSC.IP.String(), conf.Outputs.OSC.Port)
+	log.Debugf("final cue mapping: %v", oscMap.controlMap)
 
 	quit := false
-	// connect to midi input
-	in, err := midi.FindInPort(conf.MidiIn)
-	if err != nil {
-		log.Errorf("can't find midi input %v", conf.MidiIn)
-		log.Errorf("found options [%+v]", midi.GetInPorts())
-		quit = true
+
+	// setup osc dispatcher and server
+	oscMap.oscDispatcher = osc.NewStandardDispatcher()
+	oscMap.oscInServer = &osc.Server{
+		Addr:       fmt.Sprint(conf.OSCIn.IP.String(), ":", conf.OSCIn.Port),
+		Dispatcher: oscMap.oscDispatcher,
 	}
+
+	// set up osc send client
+	oscMap.oscOutClient = osc.NewClient(conf.Outputs.OSCOut.IP.String(), conf.Outputs.OSCOut.Port)
 
 	// connect to midi output
 	out, err := midi.FindOutPort(conf.Outputs.MIDIPC.Name)
@@ -75,7 +79,7 @@ func main() {
 		log.Errorf("can't find midi output %v", conf.Outputs.MIDIPC.Name)
 		quit = true
 	} else {
-		mscMap.midiOut = &out
+		oscMap.midiOut = &out
 	}
 
 	// connect to qlab if we're using that
@@ -85,8 +89,16 @@ func main() {
 			log.Errorf("can't find midi output %v", "QLab")
 			quit = true
 		} else {
-			mscMap.qlabOut = &out
+			oscMap.qlabOut = &out
 		}
+	}
+
+	for i := 0; i < numHouseLights; i++ {
+		stopChannels[i] = make(chan struct{})
+	}
+
+	if conf.Outputs.AudioFiles {
+		speaker.Init(DefaultSampleRate, DefaultBufferSize)
 	}
 
 	if conf.Outputs.KeyboardCommands {
@@ -102,30 +114,36 @@ func main() {
 				time.Sleep(2 * time.Second)
 			}
 
-			mscMap.keyBonding = &kb
+			oscMap.keyBonding = &kb
 		}
-	}
-
-	if conf.Outputs.AudioFiles {
-		speaker.Init(DefaultSampleRate, DefaultBufferSize)
 	}
 
 	if quit {
 		return
 	}
 
-	for i := 0; i < numHouseLights; i++ {
-		stopChannels[i] = make(chan struct{})
+	// Ping the Colorsource AV to open a loopback, then listen for cue numbers
+	responseChannel := make(chan bool, 1)
+	go listenForOSC(oscMap, responseChannel)
+
+	pingMessage := osc.NewMessage("/cs/ping", "1")
+	if err := oscMap.oscOutClient.Send(pingMessage); err != nil {
+		log.Errorf("Failed to ping: %v", err)
 	}
 
-	// listen for midi sysex commands from etc
-	stop, err := midi.ListenTo(in, mscMap.midiListenFunc, midi.UseSysEx())
-	if err != nil {
-		log.Errorf("failed to listen to midi: %v", err)
+	// Wait for a response or a timeout
+	timer := time.NewTimer(time.Second * 5)
+	select {
+	case <-responseChannel:
+		//Received a response
+		log.Debugf("Successfully sent a ping")
+		timer.Stop()
+	case <-timer.C:
+		log.Errorf("No ping response detected")
 		return
 	}
 
-	log.Infof("listening for midi from %v(%v) and outputting to %s:%d and %s", in.String(), in.Number(), conf.Outputs.OSC.IP, conf.Outputs.OSC.Port, conf.Outputs.MIDIPC.Name)
+	log.Infof("listening for OSC from %v:%v and outputting MIDI to %s:%d and %s", conf.OSCIn.IP, conf.OSCIn.Port, conf.Outputs.OSCOut.IP, conf.Outputs.OSCOut.Port, conf.Outputs.MIDIPC.Name)
 
 	// listen for ctrl+c
 	c := make(chan os.Signal, 1)
@@ -135,98 +153,57 @@ func main() {
 		fmt.Println("quitting")
 		break
 	}
-
-	stop()
 }
 
-// midiListenFunc listens for messages coming from the etc express, parses it, and sends it out to the output midi and as an osc command
-func (m *MSCMap) midiListenFunc(msg midi.Message, timestampms int32) {
-	var bt []byte
-	var ch, key, vel uint8
-	switch {
-	case msg.GetSysEx(&bt):
-		log.Debugf("got sysex: % X", bt)
-		command, cue, err := parseMSC(bt)
-		if err != nil {
-			log.Errorf("failed to parse msc: %v", err)
-		} else {
-			tc := fmt.Sprintf("%.1f", cue)
-			if string(tc[len(tc)-1:]) == "0" {
-				tc = fmt.Sprintf("%.0f", cue)
-			}
+func listenForOSC(m *OSCMap, responseChannel chan bool) {
+	m.oscDispatcher.AddMsgHandler("/cs/out/ping", func(msg *osc.Message) {
+		// Check ping response
+		responseChannel <- true
+	})
 
-			m.sendMidiOut(cue)
-			if m.keyBonding != nil {
-				m.sendKeyboardCommand(cue)
-			}
-			go m.playAudioFile(cue)
-			go m.toggleLight(cue)
-			m.sendOSC(command, tc)
-		}
-	case msg.GetNoteStart(&ch, &key, &vel):
-		log.Debugf("got starting note %s on channel %v with velocity %v", midi.Note(key), ch, vel)
-	case msg.GetNoteEnd(&ch, &key):
-		log.Debugf("got ending note %s on channel %v", midi.Note(key), ch)
-	default:
-		// ignore
-	}
-}
+	// Handle cue numbers
+	m.oscDispatcher.AddMsgHandler("/cs/out/playback/go", func(msg *osc.Message) {
+		cueNumber := fmt.Sprintf("%v", msg.Arguments[0])
 
-// parseMSC will parse the etc msc message into a command string and a cue number
-func parseMSC(bt []byte) (command string, cue float64, err error) {
-	if len(bt) >= 9 && bt[0] == 0x7f {
-		// get cue number
-		btLen := len(bt)
-		cue, err := strconv.ParseFloat(string(bt[5:btLen-3]), 64)
-		if err != nil {
-			return "", 0, fmt.Errorf("failed to parse float from[%v]: %v", string(bt[5:btLen-3]), err)
+		// Trim one trailing '_'
+		if last := len(cueNumber) - 1; last >= 0 && cueNumber[last] == '_' {
+			cueNumber = cueNumber[:last]
 		}
 
-		// get command
-		command = ""
-		switch bt[4] {
-		case 0x01:
-			command = "go"
-		case 0x02:
-			command = "stop"
-		case 0x03:
-			command = "resume"
-		case 0x07:
-			command = "macro"
-		default:
-			return "", 0, fmt.Errorf("unrecognized msc command: %x", bt[4])
+		// If cue number ends in 0, make an optional second to test
+		cueInteger := strings.Clone(cueNumber)
+		if strings.Contains(cueInteger, ".0") {
+			cueInteger = strings.ReplaceAll(cueInteger, ".0", "")
 		}
+		log.Debugf("Received cue number: %v", cueNumber)
 
-		return command, cue, nil
-	}
+		m.sendMidiOut(cueNumber, cueInteger)
+		if m.keyBonding != nil {
+			m.sendKeyboardCommand(cueNumber, cueInteger)
+		}
+		go m.playAudioFile(cueNumber, cueInteger)
+		go m.toggleLight(cueNumber, cueInteger)
+	})
 
-	return "", 0, fmt.Errorf("not an msc packet. len: %v bt[0]: %x", len(bt), bt[0])
-}
-
-// sendOSC sends a message out as an osc message with address /msc/<command>/<cue number>
-func (m *MSCMap) sendOSC(command, cue string) {
-	cueFloat, err := strconv.ParseFloat(cue, 64)
+	err := m.oscInServer.ListenAndServe()
 	if err != nil {
-		log.Errorf("failed to convert %v to int: %v", cue, err)
-	} else {
-		msg := osc.NewMessage(fmt.Sprintf("/msc/%s/%s", command, cue))
-		msg.Append(cueFloat)
-		msg.Append(command)
-		log.Infof("sending osc %v\n", msg.String())
-		m.oscClient.Send(msg)
+		log.Errorf("Error starting OSC server: %v", err)
 	}
 }
 
-// sendMidiPC sends a MIDI message to the midi out that configured in the config
-func (m *MSCMap) sendMidiOut(cue float64) {
+// sendMidiOut sends a MIDI message to the midi out that configured in the config
+func (m *OSCMap) sendMidiOut(cueNumber string, cueInteger string) {
 	if m.midiOut == nil {
 		return
 	}
 
-	mc, ok := m.midiMap[cue]
+	mc, ok := m.controlMap[cueNumber]
 	if !ok {
-		log.Debugf("no soundboard interface command for cue[%v]", cue)
-		return
+		mc, ok = m.controlMap[cueInteger]
+		if !ok {
+			log.Debugf("no soundboard interface command for cue[%v]", cueNumber)
+			return
+		}
 	}
 
 	soundCue := mc.soundCue

@@ -3,20 +3,23 @@ package main
 import log "github.com/sirupsen/logrus"
 
 // sendKeyboardCommand simulates a keyboard keypress. Useful for soundboard programs
-func (m *MSCMap) sendKeyboardCommand(cue float64) {
+func (m *OSCMap) sendKeyboardCommand(cueNumber string, cueInteger string) {
 	if m.keyBonding == nil {
 		log.Errorf("keybonding is nil")
 		return
 	}
 
-	cueMap, ok := m.midiMap[cue]
+	cueMap, ok := m.controlMap[cueNumber]
 	if !ok {
-		log.Debugf("no virtual keyboard command for cue[%v]", cue)
-		return
+		cueMap, ok = m.controlMap[cueInteger]
+		if !ok {
+			log.Debugf("no virtual keyboard command for cue[%v]", cueNumber)
+			return
+		}
 	}
 
 	if cueMap.keyboardKey == -1 {
-		log.Debugf("no keyboard key specified for cue[%v]", cue)
+		log.Debugf("no keyboard key specified for cue[%v]", cueNumber)
 		return
 	}
 

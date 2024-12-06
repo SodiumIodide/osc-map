@@ -12,17 +12,20 @@ import (
 )
 
 // play a simple audio file with no fading or level change
-func (m *MSCMap) playAudioFile(cue float64) {
-	mc, ok := m.midiMap[cue]
+func (m *OSCMap) playAudioFile(cueNumber string, cueInteger string) {
+	mc, ok := m.controlMap[cueNumber]
 	if !ok {
-		log.Debugf("no audio file for cue[%v]", cue)
-		return
+		mc, ok = m.controlMap[cueInteger]
+		if !ok {
+			log.Debugf("no audio file for cue[%v]", cueNumber)
+			return
+		}
 	}
 
 	filename := mc.audioFile
 
 	if filename == "" {
-		log.Debugf("did not find audio file for cue[%v]", cue)
+		log.Debugf("did not find audio file for cue[%v]", cueNumber)
 		return
 	}
 

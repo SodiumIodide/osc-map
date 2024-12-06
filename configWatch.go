@@ -9,7 +9,7 @@ import (
 )
 
 // monitorConfig watches for changes in the config and will update the midiMap in real time so the program doesn't need to be restarted when a new cue is added to the config
-func (m *MSCMap) monitorConfig() {
+func (m *OSCMap) monitorConfig() {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal("NewWatcher failed: ", err)
@@ -49,7 +49,7 @@ func (m *MSCMap) monitorConfig() {
 	<-done
 }
 
-func (m *MSCMap) readConfig() (*conf, error) {
+func (m *OSCMap) readConfig() (*conf, error) {
 	confBytes, err := os.ReadFile("config.yaml")
 	if err != nil {
 		log.Fatalf("failed to read config file: %v", err)
@@ -65,8 +65,8 @@ func (m *MSCMap) readConfig() (*conf, error) {
 	log.Debugf("config: %+v", conf)
 
 	// create midi map
-	midiMap := make(map[float64]cueMap)
-	for _, cm := range conf.MidiCueMapping {
+	controlMap := make(map[string]cueMap)
+	for _, cm := range conf.ControlCueMapping {
 
 		// parse hex from config to int
 		keyboard, ok := KeyboardMap[cm.Keyboard]
@@ -87,10 +87,10 @@ func (m *MSCMap) readConfig() (*conf, error) {
 			transitions: cm.Transitions,
 			effects:     cm.Effects,
 		}
-		midiMap[cm.In] = newCM
+		controlMap[cm.In] = newCM
 	}
 
-	m.midiMap = midiMap
+	m.controlMap = controlMap
 
 	return conf, nil
 }
