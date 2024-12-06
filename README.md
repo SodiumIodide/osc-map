@@ -1,6 +1,6 @@
 # OSC-Map
 
-Receives MSC (MIDI Show Control) messages from an etc express (sysex messages), sends it out as an osc message, and sends out a midi program change message. Tested on Windows. This project has been forked to support the Los Alamos Little Theater in receiving MSC signal from the lightboard and sending a MIDI signal to the soundboard for cue sync and mapping.
+Receives OSC (Open Show Control) messages from an ETC ColorSource AV lightboard, and sends out a midi program change message to be interpreted by a Mackie TT24 soundboard. Tested on Windows. This project has been forked and heavily modified to support the Los Alamos Little Theater in receiving OSC signals from the lightboard and sending a MIDI signal to the soundboard for cue sync and mapping.
 
 ## Dependencies
 
@@ -16,26 +16,30 @@ OSC-Map will look for `config.yaml` in the local directory.
 
 ## File construction
 
-For LALT use with current equipment (e.g. tt24 soundboard and ETC Express or Colorsource AV lightboard), the config file should start with this header:
+For LALT use with current equipment (e.g. TT24 soundboard and Colorsource AV lightboard), the config file should start with this header:
 
 ```yaml
-midiIn: "USB MIDI Interface"
+oscIn:
+  ip: 10.1.10.203
+  port: 8006
 
 outputs:
-    osc:
-        ip: 127.0.0.1
-        port: 8765
-    midi-pc:
-        name: UM-ONE
-        channel: 1
-    qlab: false
-    keyboard-commands: true
-    audio-files: true
+  oscOut:
+    ip: 10.1.10.77
+    port: 8005
+  midi-pc:
+    name: UM-ONE
+    channel: 1
+  qlab: false 
+  keyboard-commands: true
+  audio-files: true
 ```
 
 If no key-mapping or audio playback is required for the current project, the values of `keyboard-commands` and `audio-files` respectively may be set to `false`, but any performance impact of allowing them is inconsequential.
 
-Following the above header, a new YAML list may be constructed titled `midi-cue-mapping`. This is where the bulk of the project will be constructed. Each entry in this list should start with a cue number corresponding to the cue on the lightboard input as a `light` value with an integer. For each light cue, there are several options to attach to that signal:
+To open a loopback relay with the ColorSource AV lightboard, a ping message must be sent from the program. If no ping response is received, check the lightboard's connectivity to the network, as well as the gateway IP and port and ensure that the operating computer and the lightboard are on the same subnet mask (typically /24, or 255.255.255.0).
+
+Following the above header, a new YAML list may be constructed titled `control-cue-mapping`. This is where the bulk of the project will be constructed. Each entry in this list should start with a cue number corresponding to the cue on the lightboard input as a `light` value with a numerical string. Support light cue numbers include integers (e.g. 1, 5, 14), decimal integers (e.g. 1.0, 5.0, 14.0), and single-digit decimals (e.g. 1.1, 5.6, 14.9). For each light cue, there are several options to attach to that signal:
 
 - `sound`
 - `unmute`
@@ -77,6 +81,11 @@ Allowable keys are a-z, A-Z, and 0-9, entered in quotation marks in the value of
 - Backspace : `"bs"` or `"BS"`
 - Enter : `"ent"` or `"ENT"`
 - Escape: `"esc"` or `"ESC"`
+- Space: `"space"` or `"SPACE"`
+- Up Arrow Key: `"up"` or `"UP"`
+- Down Arrow Key: `"down"` or `"DOWN"`
+- Left Arrow Key: `"left"` or `"LEFT"`
+- Right Arrow Key: `"right"` or `"RIGHT"`
 
 ### `file` - String
 
@@ -98,7 +107,9 @@ The `houselights` option will take a list of integers corresponding to house lig
 | 9     | 10    | 11    | 12    |
 | Booth | 13    | 14    | 15    |
 
-Any numbers greater than 20 will not be functional. Along with the `houselights` list, you can include a 4 digit RGBW value in the form of an integer list from 0-255 for each value to assign a color profile for the specified LED bulbs via the `rgbws` option. As such, this list can range from `[0, 0, 0, 0]` for no light effect to `[255, 255, 255, 255]` for a full light effect. There are theories and sciences behind mixing RGBW values which are outside the scope of this README, so experimentation is encouraged.
+Any numbers greater than 20 will not be functional, and any numbers greater than 15 will likely not be installed in the house unless hardware changes are made. As an aside, any hardware changes should be flashed with similar firmware in HomeAssistant to the existing bulb devices.
+
+Along with the `houselights` list, you can include a 4 digit RGBW value in the form of an integer list from 0-255 for each value to assign a color profile for the specified LED bulbs via the `rgbws` option. As such, this list can range from `[0, 0, 0, 0]` for no light effect to `[255, 255, 255, 255]` for a full light effect. There are theories and sciences behind mixing RGBW values which are outside the scope of this README, so experimentation is encouraged.
 
 The `transitions` list requires integer inputs that correspond to the number of seconds that it takes for the light transition to occur. Note that LED light bulbs can have unexpected color variations due to differences in firmware programming when applying transition length effects. If precise color control is extremely important, it may be best to stick to transition times of 0. If smoothness of lighting effects is desired, then experimentation may be required with RGBW values and transition times to limit any unwanted color variations from the scene.
 
@@ -151,18 +162,20 @@ As an example, consider a simple cue program.
 The corresponding `config.yaml` file might look like the following, with comments to notate the show flow preceded by a `#` symbol:
 
 ```yaml
-midiIn: "USB MIDI Interface"
+oscIn:
+  ip: 10.1.10.203
+  port: 8006
 
 outputs:
-    osc:
-        ip: 127.0.0.1
-        port: 8765
-    midi-pc:
-        name: UM-ONE
-        channel: 1
-    qlab: false
-    keyboard-commands: true
-    audio-files: true
+  oscOut:
+    ip: 10.1.10.77
+    port: 8005
+  midi-pc:
+    name: UM-ONE
+    channel: 1
+  qlab: false 
+  keyboard-commands: true
+  audio-files: true
 
 midi-cue-mapping:
     # Show opening, raise volume for dialogue on channel 1 and unmute 4 for
@@ -174,7 +187,7 @@ midi-cue-mapping:
       file: "C:\\Users\\LALT\\Documents\\Shows\\MyCoolShow\\door-chime.mp3"
     # Next scene, mute 1 and 4, and bring channels 2 and 3 down to half volume because the
     # actors yell for this part, bring channel 5 to neutral volume
-    - light: 2
+    - light: 2.1
       mute: [1, 4]
       fader: [2, 3, 5]
       value: [50, 50, 100]
@@ -183,7 +196,7 @@ midi-cue-mapping:
       file: "C:\\Users\\LALT\\Documents\\Shows\\MyCoolShow\\gunshot.wav"
     # For the intermission, use new soundboard snapshot and play fun music
     # in audio cue software.
-    - light: 13
+    - light: 13.4
       sound: 5
       keyboard: "J"
     # Stop the music.

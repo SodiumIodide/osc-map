@@ -1,9 +1,11 @@
-midiIn: "USB MIDI Interface"
+oscIn:
+  ip: 10.1.10.203
+  port: 8006
 
 outputs:
-  osc:
-    ip: 127.0.0.1
-    port: 8765
+  oscOut:
+    ip: 10.1.10.77
+    port: 8005
   midi-pc:
     name: UM-ONE
     channel: 1
@@ -12,14 +14,27 @@ outputs:
   audio-files: true
 
 midi-cue-mapping:
-  - light: 1
-    unmute: [4, 5]
-    fader: [1, 2]
-    value: [100, 100]
-    file: "C:\\Users\\LALT\\Documents\\Shows\\ThePlayThatGoesWrong_SFX\\door-chime.mp3"
-  - light: 2
-    mute: [4, 5]
-    fader: [1,2]
-    value: [0, 0]
-  - light: 5
-    file: "C:\\Users\\LALT\\Documents\\Shows\\ThePlayThatGoesWrong_SFX\\clock-single.mp3"
+    # Show opening, raise volume for dialogue on channel 1 and unmute 4 for
+    # entrance while doorbell rings.
+    - light: 1
+      unmute: [4]
+      fader: [1]
+      value: [100]
+      file: "C:\\Users\\LALT\\Documents\\Shows\\MyCoolShow\\door-chime.mp3"
+    # Next scene, mute 1 and 4, and bring channels 2 and 3 down to half volume because the
+    # actors yell for this part, bring channel 5 to neutral volume
+    - light: 2.1
+      mute: [1, 4]
+      fader: [2, 3, 5]
+      value: [50, 50, 100]
+    # Murder happens!
+    - light: 5
+      file: "C:\\Users\\LALT\\Documents\\Shows\\MyCoolShow\\gunshot.wav"
+    # For the intermission, use new soundboard snapshot and play fun music
+    # in audio cue software.
+    - light: 13.4
+      sound: 5
+      keyboard: "J"
+    # Stop the music.
+    - light: 20
+      keyboard: "ESC"
