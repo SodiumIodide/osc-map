@@ -52,14 +52,24 @@ func listenForOSC(m *OSCMap, responseChannel chan bool) {
 		responseChannel <- true
 	})
 
+	// ExtractDecimal extracts the decimal part from a string in the format "decimal_label"
+	ExtractDecimal := func(input string) string {
+		// Find the position of the underscore
+		underscoreIndex := strings.Index(input, "_")
+		if underscoreIndex == -1 {
+			// If no underscore is found, return the entire string (assuming it's just the decimal)
+			return input
+		}
+		// Return the substring before the underscore
+		return input[:underscoreIndex]
+	}
+
 	// Handle cue numbers
 	m.oscDispatcher.AddMsgHandler("/cs/out/playback/go", func(msg *osc.Message) {
 		cueNumber := fmt.Sprintf("%v", msg.Arguments[0])
 
-		// Trim one trailing '_'
-		if last := len(cueNumber) - 1; last >= 0 && cueNumber[last] == '_' {
-			cueNumber = cueNumber[:last]
-		}
+		// Trim the cue label and underscore
+		cueNumber = ExtractDecimal(cueNumber)
 
 		// If cue number ends in 0, make an optional second to test
 		cueInteger := strings.Clone(cueNumber)
