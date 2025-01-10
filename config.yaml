@@ -13,49 +13,85 @@ outputs:
   keyboard-commands: true
   audio-files: true
 
-# Love, Loss, and What I Wore Projector Cues + Song Cue
+# 8x10s sound cues and Mic Mute/Unmute
 
 control-cue-mapping:
-  - light: 1
-    unmute: [1]
-  - light: 2
-    mute: [1]
-  - light: 5.1
-    fader: [6]
-    value: [50]
-  - light: 6
-    keyboard: "L"
-  - light: 15
-    keyboard: "L"
-  - light: 16
-    keyboard: "L"
-  - light: 18
-    keyboard: "L"
-  - light: 19
-    keyboard: "L"
-  - light: 20
-    keyboard: "L"
-  - light: 71
-    keyboard: "L"
-  - light: 72
-    keyboard: "L"
-  - light: 75
-    keyboard: "L"
-  - light: 121
-    keyboard: "L"
-  - light: 122
-    keyboard: "L"
-  - light: 162
-    keyboard: "L"
-  - light: 163
-    keyboard: "L"
-  - light: 164
-    keyboard: "L"
-  - light: 171
-    keyboard: "L"
-  - light: 172
-    keyboard: "L"
-  - light: 173
-    keyboard: "L"
-  - light: 265
-    file: "C:\\Users\\LALT\\Documents\\Shows\\LoveLoss\\Cyndi Lauper - Girls Just Want To Have Fun (Official Video) [PIb6AZdTr-A].mp3"
+  - light: 10.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_firstknock.mp3"
+  - light: 15.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_twoknocks.mp3"
+  - light: 20.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_oneknock.mp3"
+  - light: 25.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_morseknocks.mp3"
+  - light: 30.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_twoknocks.mp3"
+  - light: 35.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_oneknock.mp3"
+  - light: 40.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_oneknock.mp3"
+  - light: 45.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_oneknock.mp3"
+  - light: 50.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_oneknock.mp3"
+  - light: 55.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_oneknock.mp3"
+  - light: 60.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_oneknock.mp3"
+  - light: 65.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_oneknock.mp3"
+  - light: 85.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\supermarket_background.mp3"
+  - light: 90.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\supermarket_pen.mp3"
+  - light: 110.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\bread_opening.mp3"
+  - light: 165.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\writing_background.mp3"
+  - light: 180.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\writing_cartoon.mp3"
+  - light: 205.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\explaining_crash.mp3"
+  - light: 215.0
+    unmute: [14]
+  - light: 220.0
+    mute: [14]
+  - light: 225.0
+    unmute: [14]
+  - light: 230.0
+    mute: [14]
+  - light: 235.0
+    unmute: [14]
+  - light: 240.0
+    mute: [14]
+  - light: 245.0
+    unmute: [14]
+  - light: 250.0
+    mute: [14]
+  - light: 255.0
+    unmute: [14]
+  - light: 260.0
+    mute: [14]
+  - light: 265.0
+    unmute: [14]
+  - light: 270.0
+    mute: [14]
+  - light: 285.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\audience_background.mp3"
+  - light: 290.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\audience_ringtone.mp3"
+  - light: 310.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\three_birds.mp3"
+  - light: 325.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\three_birds.mp3"
+  - light: 340.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\melodrama_music.mp3"
+  - light: 350.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\melodrama_sting.mp3"
+  - light: 355.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\melodrama_carriage.mp3"
+  - light: 360.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\melodrama_knock.mp3"
+  - light: 375.0
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\melodrama_gun.mp3"
+  
