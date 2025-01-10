@@ -1,5 +1,7 @@
 # Define the directory and the program you want to call
 $directoryPath = "C:\Users\LALT\Documents\Shows\8x10_2025\test"  # Change this to the directory path
+#### NOTE #####
+# DO NOT USE A DIRECTORY NAME WITH SPACES
 
 $programPath = "ffmpeg"
 
