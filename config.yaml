@@ -16,6 +16,10 @@ outputs:
 # 8x10s sound cues and Mic Mute/Unmute
 
 control-cue-mapping:
+  - light: 1.0 # Broadway Audio Levels
+    fader: [23,24]
+    value: [105,105]
+    mute: [13,14]
   - light: 10.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_firstknock.mp3"
   - light: 15.0
@@ -40,58 +44,94 @@ control-cue-mapping:
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_oneknock.mp3"
   - light: 65.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\broadway_oneknock.mp3"
+  - light: 75.0 # Supermarket Set Levels
+    fader: [23,24]
+    value: [85,85]
   - light: 85.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\supermarket_background.mp3"
   - light: 90.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\supermarket_pen.mp3"
+  - light: 100.0 # Bread Set Levels
+    fader: [23,24]
+    value: [52,52] 
   - light: 110.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\bread_opening.mp3"
+  - light: 155.0 # Writing Set Levels
+    fader: [23,24]
+    value: [105,105]
   - light: 165.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\writing_background.mp3"
   - light: 180.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\writing_cartoon.mp3"
+  - light: 202.0 # Explaining Set Levels
+    fader: [13, 14, 23, 24] # Kelsey, Jack, Audio, Audio
+    value: [120, 108, 100,100]
   - light: 205.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\explaining_crash.mp3"
   - light: 215.0
-    unmute: [14]
+    unmute: [13]
   - light: 220.0
-    mute: [14]
+    mute: [13]
   - light: 225.0
-    unmute: [14]
+    unmute: [13]
   - light: 230.0
-    mute: [14]
+    mute: [13]
   - light: 235.0
-    unmute: [14]
+    unmute: [13]
   - light: 240.0
-    mute: [14]
+    mute: [13]
   - light: 245.0
-    unmute: [14]
+    unmute: [13]
   - light: 250.0
-    mute: [14]
+    mute: [13]
   - light: 255.0
-    unmute: [14]
+    unmute: [13]
   - light: 260.0
-    mute: [14]
+    mute: [13]
   - light: 265.0
     unmute: [14]
-  - light: 270.0
+  - light: 268.0
     mute: [14]
+    unmute: [13]
+  - light: 270.0
+    mute: [13]
+  - light: 275.0 # set levels for audience
+    fader: [23,24]
+    value: [105,105]
   - light: 285.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\audience_background.mp3"
   - light: 290.0
-    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\audience_ringtone.mp3"
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\audience_ringtone2.mp3"
+  - light: 300.0 # set levels for three
+    fader: [23,24]
+    value: [85,85]
   - light: 310.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\three_birds.mp3"
   - light: 325.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\three_birds.mp3"
+  - light: 335.0 # set levels for melodrama
+    fader: [23,24]
+    value: [78, 78]
   - light: 340.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\melodrama_music.mp3"
+  - light: 345.0
+    fader: [23,24]
+    value: [85, 85]
   - light: 350.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\melodrama_sting.mp3"
   - light: 355.0
-    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\melodrama_carriage.mp3"
+    file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\melodrama_carriage1.mp3"
+  # - light: 356.0 #NEED HADLEY TO ADD THIS FOR ME!!!
+  #   fader: [23,24]
+  #   value: [110, 110]
   - light: 360.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\melodrama_knock.mp3"
+  # - light: 361.0 # NEED HADLEY TO ADD THIS FOR ME!!!
+  #   fader: [23,24]
+  #   value: [100, 100]
+  - light: 366.0
+    fader: [23,24]
+    value: [100, 100]
   - light: 375.0
     file: "C:\\Users\\LALT\\Documents\\Shows\\8x10_2025\\test\\melodrama_gun.mp3"
   
