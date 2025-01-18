@@ -1,11 +1,16 @@
 # Define the directory and the program you want to call
 $directoryPath = "C:\Users\LALT\Documents\Shows\8x10_2025\test"  # Change this to the directory path
-$programPath = "ffmpeg"  # Change this to the program you want to call
+#### NOTE #####
+# DO NOT USE A DIRECTORY NAME WITH SPACES
+
+$programPath = "ffmpeg"
 
 # Get all files in the directory
 $files = Get-ChildItem -Path $directoryPath -File
-$outputFile = $directoryPath + "\output.txt"
-$errorFile = $directoryPath + "\error.txt"
+
+# Redirect output from subprocesses to current directory
+$outputFile = ".\output.txt"
+$errorFile = ".\error.txt"
 
 # Loop through each file and call the program on it
 foreach ($file in $files) {
