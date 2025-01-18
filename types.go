@@ -12,6 +12,7 @@ type conf struct {
 type confOutputs struct {
 	OSCOut           confOSC          `yaml:"oscOut"`
 	MIDIPC           confOutputMIDIPC `yaml:"midi-pc"`
+	MIDISCS          confOutputMIDIPC `yaml:"midi-scs"`
 	Qlab             bool             `yaml:"qlab"`
 	KeyboardCommands bool             `yaml:"keyboard-commands"`
 	AudioFiles       bool             `yaml:"audio-files"`
@@ -40,6 +41,7 @@ type confCueMapping struct {
 	RGBWs        [][]int   `yaml:"rgbws"`
 	Transitions  []float32 `yaml:"transitions"`
 	Effects      []string  `yaml:"effects"`
+	SCS          uint8     `yaml:"scs"`
 }
 
 type cueMap struct {
@@ -54,6 +56,7 @@ type cueMap struct {
 	rgbws       [][]int
 	transitions []float32
 	effects     []string
+	scs         uint8
 }
 
 // Struct to represent the HomeAssistant API response

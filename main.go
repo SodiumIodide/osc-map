@@ -37,8 +37,10 @@ type OSCMap struct {
 	oscInServer    *osc.Server
 	oscOutClient   *osc.Client
 	midiOut        *drivers.Out
+	scsOut         *drivers.Out
 	qlabOut        *drivers.Out
 	midiOutChannel uint8
+	scsOutChannel  uint8
 	controlMap     map[string]cueMap
 	keyBonding     *keybd_event.KeyBonding
 }
@@ -127,6 +129,16 @@ func main() {
 		quit = true
 	} else {
 		oscMap.midiOut = &out
+		oscMap.midiOutChannel = conf.Outputs.MIDIPC.Channel
+	}
+
+	scs, err := midi.FindOutPort(conf.Outputs.MIDISCS.Name)
+	if err != nil {
+		log.Errorf("Can't find midi output %v", conf.Outputs.MIDISCS.Name)
+		quit = true
+	} else {
+		oscMap.scsOut = &scs
+		oscMap.scsOutChannel = conf.Outputs.MIDISCS.Channel
 	}
 
 	// connect to qlab if we're using that

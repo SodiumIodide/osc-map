@@ -7,7 +7,10 @@ outputs:
     ip: 10.1.10.77
     port: 8005
   midi-pc:
-    name: UM-ONE
+    name: loopMIDI Port osc-map
+    channel: 1
+  midi-scs:
+    name: loopMIDI Port SCS
     channel: 1
   qlab: false 
   keyboard-commands: true

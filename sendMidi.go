@@ -25,6 +25,7 @@ func (m *OSCMap) sendMidiOut(cueNumber string, cueInteger string) {
 	unmuteCue := mc.unmuteCue
 	faderCue := mc.faderCue
 	faderVal := mc.faderVal
+	scsCue := mc.scs
 
 	if soundCue == 0 && len(muteCue) == 0 && len(unmuteCue) == 0 && len(faderCue) == 0 {
 		return
@@ -127,5 +128,22 @@ func (m *OSCMap) sendMidiOut(cueNumber string, cueInteger string) {
 		}
 
 		log.Infof("Sent program change %v to qlab", soundCue)
+	}
+
+	if scsCue != 0 {
+		mm := midi.NoteOn(m.scsOutChannel, scsCue, 0x01)
+
+		out, err := midi.SendTo(*m.scsOut)
+		if err != nil {
+			log.Errorf("Failed to get midi send function: %v", err)
+		}
+
+		err = out(mm)
+		if err != nil {
+			log.Errorf("Failed to send midi NoteOn message to [%v]: %v", m.scsOut, err)
+			return
+		}
+
+		log.Infof("Sent NoteOn signal %v to SCS output [%v]", scsCue, m.scsOut)
 	}
 }
